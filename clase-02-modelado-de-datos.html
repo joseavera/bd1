@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clase 2 — Modelado de Datos</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .mixtle-card {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+  }
+  .mixtle-card img { width: 110px; flex-shrink: 0; }
+  @media (max-width: 600px) {
+    .mixtle-card { flex-direction: column; text-align: center; }
+  }
+
+  .mixtle-tip {
+    display: flex;
+    gap: .9rem;
+    align-items: flex-start;
+  }
+  .mixtle-tip img { width: 46px; flex-shrink: 0; margin-top: .1rem; }
+
+  .diagram-wrap {
+    background: var(--off-white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1rem 1rem;
+  }
+
+  .compare-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: .9rem;
+    margin: 1.25rem 0;
+  }
+  @media (max-width: 700px) {
+    .compare-grid { grid-template-columns: 1fr; }
+  }
+  .model-card {
+    background: var(--off-white);
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--guinda);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.1rem;
+  }
+  .model-card h4 { color: var(--guinda-dark); margin-bottom: .4rem; }
+  .model-card .model-analogy {
+    font-size: .85rem;
+    color: var(--ink-secondary);
+    font-style: italic;
+    margin-top: .5rem;
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo-wrap"><img src="imagen1.png" alt="Logotipo IEDEP"></div>
+  <div class="header-text">
+    <span class="inst-name">Instituto de Educación Digital del Estado de Puebla</span>
+    <span class="doc-title">Material de clase · Licenciatura en Sistemas Computacionales</span>
+  </div>
+</header>
+
+<section class="class-hero">
+  <span class="class-label">Unidad 2 · Modelado de Datos</span>
+  <h1>Del requerimiento al diagrama: así se piensa una base de datos antes de construirla</h1>
+  <span class="class-subtitle">Segunda sesión de la asignatura Bases de Datos I</span>
+  <div class="meta-row">
+    <div class="meta-item">Programa educativo<span>Lic. en Sistemas Computacionales</span></div>
+    <div class="meta-item">Asignatura<span>Bases de Datos I</span></div>
+    <div class="meta-item">Unidad<span>2 · Modelado de Datos</span></div>
+    <div class="meta-item">Tema<span>2.1 a 2.4</span></div>
+    <div class="meta-item">Fecha<span>Sábado 19 de septiembre de 2026</span></div>
+  </div>
+</section>
+
+<main class="page-wrapper">
+
+  <!-- COMPETENCIAS -->
+  <section class="section">
+    <h2 class="section-title">Competencias a desarrollar</h2>
+    <div class="competency-card">
+      <span class="comp-num">01</span>
+      <span class="comp-text"><strong>Identificar</strong> entidades, atributos y relaciones a partir de un requerimiento de negocio, distinguiendo cada elemento con precisión conceptual.</span>
+    </div>
+    <div class="competency-card">
+      <span class="comp-num">02</span>
+      <span class="comp-text"><strong>Aplicar</strong> la notación estándar de un diagrama entidad-relación y las reglas de cardinalidad para representar gráficamente la estructura de la información.</span>
+    </div>
+    <div class="competency-card">
+      <span class="comp-num">03</span>
+      <span class="comp-text"><strong>Diseñar</strong> un Diagrama Entidad-Relación (DER) que refleje fielmente la semántica del negocio y las reglas de cardinalidad de un caso real.</span>
+    </div>
+  </section>
+
+  <!-- INTRO MIXTLE -->
+  <section class="section">
+    <div class="card mixtle-card">
+      <img src="imagen2.png" alt="Mixtle, guía de la clase">
+      <div>
+        <span class="card-title">Hola de nuevo, soy Mixtle</span>
+        <p>La clase pasada aprendimos qué es un dato, cómo se convierte en información y cómo se organiza un SGBD por dentro. Hoy damos el siguiente paso: antes de crear una sola tabla, todo buen diseñador dibuja un mapa de lo que va a construir. Ese mapa se llama modelo entidad-relación, y hoy aprenderemos a trazarlo.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- INICIO -->
+  <section class="section">
+    <h2 class="section-title">Para comenzar: activa tus ideas</h2>
+    <p>Imagina que te piden diseñar el sistema de la biblioteca de tu plantel. Antes de pensar en tablas o en SQL, alguien tiene que responder preguntas como: ¿qué cosas necesitamos recordar? (libros, usuarios, préstamos...), ¿qué datos describen a cada una? y ¿cómo se relacionan entre sí?</p>
+    <div class="callout note">
+      <p><strong>Reflexiona con tu grupo:</strong> si tuvieras que construir un plano antes de levantar un edificio, ¿por qué construiríamos una base de datos sin dibujar antes su plano? Ese plano, en bases de datos, es el diagrama entidad-relación.</p>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- 2.1 -->
+  <section class="section">
+    <h2 class="section-title">2.1 Modelo entidad-relación</h2>
+    <p>El <strong>modelo entidad-relación (E-R)</strong> es una herramienta conceptual que permite representar, de forma gráfica y cercana al lenguaje humano, qué información necesita almacenar un sistema y cómo se relaciona esa información entre sí, sin preocuparse todavía por cómo se implementará en un SGBD.</p>
+
+    <div class="concept-box">
+      <span class="concept-title">¿Por qué modelar antes de programar?</span>
+      <p>Modelar permite detectar errores de diseño —información faltante, relaciones mal planteadas— cuando todavía cuestan solo una goma de borrar, y no cuando ya cuestan reescribir código y migrar datos reales.</p>
+    </div>
+
+    <div class="mixtle-tip">
+      <img src="imagen2.png" alt="Mixtle">
+      <div class="callout" style="margin:0; flex:1;">
+        <p><strong>Analogía de Mixtle:</strong> el modelo E-R es como el guion de una película antes de filmarla. El guion no tiene cámaras ni actores todavía, pero ya define quiénes son los personajes, qué los describe y cómo interactúan entre sí. El SGBD será, más adelante, la película ya filmada.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- 2.2 -->
+  <section class="section">
+    <h2 class="section-title">2.2 Atributos, entidades y relaciones</h2>
+    <p>Todo modelo E-R se construye con tres piezas básicas. Piensa en ellas como las partes de una oración: la entidad es el <strong>sustantivo</strong>, el atributo es el <strong>adjetivo</strong> que lo describe, y la relación es el <strong>verbo</strong> que conecta a dos sustantivos.</p>
+
+    <div class="compare-grid">
+      <div class="model-card">
+        <h4>Entidad</h4>
+        <p>Un objeto, persona, lugar o evento del mundo real sobre el que necesitamos guardar información.</p>
+        <p class="model-analogy">Ejemplo: LIBRO, USUARIO.</p>
+      </div>
+      <div class="model-card">
+        <h4>Atributo</h4>
+        <p>Una característica o propiedad que describe a una entidad.</p>
+        <p class="model-analogy">Ejemplo: el LIBRO tiene título, autor y año.</p>
+      </div>
+      <div class="model-card">
+        <h4>Relación</h4>
+        <p>La forma en que dos o más entidades se asocian entre sí.</p>
+        <p class="model-analogy">Ejemplo: un USUARIO <em>presta</em> un LIBRO.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:1.5rem;">Tipos de atributos</h3>
+    <table>
+      <thead>
+        <tr><th>Tipo</th><th>Descripción</th><th>Ejemplo</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Simple</td><td>No se puede dividir en partes más pequeñas.</td><td>Correo electrónico</td></tr>
+        <tr><td>Compuesto</td><td>Se descompone en subatributos con sentido propio.</td><td>Nombre completo (nombre + apellidos)</td></tr>
+        <tr><td>Multivaluado</td><td>Puede tener más de un valor para la misma entidad.</td><td>Números telefónicos de un usuario</td></tr>
+        <tr><td>Derivado</td><td>Se calcula a partir de otro atributo.</td><td>Edad, calculada a partir de la fecha de nacimiento</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-top:1.5rem;">Cardinalidad de las relaciones</h3>
+    <p>La cardinalidad indica cuántas instancias de una entidad pueden asociarse con cuántas instancias de otra.</p>
+
+    <figure>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Tipos de cardinalidad: uno a uno, uno a muchos y muchos a muchos">
+          <!-- 1:1 -->
+          <rect x="30" y="20" width="90" height="45" rx="6" fill="var(--surface)" stroke="var(--border-strong)"/>
+          <text x="75" y="47" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="var(--ink)">PERSONA</text>
+          <line x1="120" y1="42" x2="190" y2="42" stroke="var(--guinda-rule)" stroke-width="2.5"/>
+          <rect x="190" y="20" width="90" height="45" rx="6" fill="var(--surface)" stroke="var(--border-strong)"/>
+          <text x="235" y="47" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="var(--ink)">INE</text>
+          <text x="155" y="30" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="var(--guinda)">1 : 1</text>
+          <text x="155" y="90" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--ink-secondary)">Una persona tiene una</text>
+          <text x="155" y="104" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--ink-secondary)">sola credencial INE.</text>
+
+          <!-- 1:N -->
+          <rect x="330" y="20" width="90" height="45" rx="6" fill="var(--surface)" stroke="var(--border-strong)"/>
+          <text x="375" y="47" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="var(--ink)">AUTOR</text>
+          <line x1="420" y1="42" x2="490" y2="42" stroke="var(--guinda-rule)" stroke-width="2.5"/>
+          <rect x="490" y="10" width="90" height="30" rx="6" fill="var(--surface)" stroke="var(--border-strong)"/>
+          <text x="535" y="30" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--ink)">LIBRO A</text>
+          <rect x="490" y="50" width="90" height="30" rx="6" fill="var(--surface)" stroke="var(--border-strong)"/>
+          <text x="535" y="70" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--ink)">LIBRO B</text>
+          <text x="455" y="30" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="var(--guinda)">1 : N</text>
+          <text x="480" y="120" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--ink-secondary)">Un autor puede escribir</text>
+          <text x="480" y="134" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--ink-secondary)">varios libros.</text>
+
+          <!-- N:M -->
+          <rect x="60" y="150" width="90" height="30" rx="6" fill="var(--surface)" stroke="var(--border-strong)"/>
+          <text x="105" y="170" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--ink)">USUARIO 1</text>
+          <rect x="60" y="188" width="90" height="30" rx="6" fill="var(--surface)" stroke="var(--border-strong)"/>
+          <text x="105" y="208" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--ink)">USUARIO 2</text>
+
+          <line x1="150" y1="165" x2="230" y2="165" stroke="var(--guinda-rule)" stroke-width="2"/>
+          <line x1="150" y1="165" x2="230" y2="203" stroke="var(--guinda-rule)" stroke-width="2"/>
+          <line x1="150" y1="203" x2="230" y2="165" stroke="var(--guinda-rule)" stroke-width="2"/>
+          <line x1="150" y1="203" x2="230" y2="203" stroke="var(--guinda-rule)" stroke-width="2"/>
+
+          <rect x="230" y="150" width="90" height="30" rx="6" fill="var(--surface)" stroke="var(--border-strong)"/>
+          <text x="275" y="170" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--ink)">LIBRO A</text>
+          <rect x="230" y="188" width="90" height="30" rx="6" fill="var(--surface)" stroke="var(--border-strong)"/>
+          <text x="275" y="208" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--ink)">LIBRO B</text>
+
+          <text x="190" y="145" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="var(--guinda)">N : M</text>
+          <text x="440" y="175" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--ink-secondary)">Varios usuarios pueden pedir prestados</text>
+          <text x="440" y="189" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--ink-secondary)">varios libros a lo largo del tiempo.</text>
+        </svg>
+      </div>
+      <figcaption>Las tres cardinalidades básicas de una relación.</figcaption>
+    </figure>
+
+    <div class="mixtle-tip">
+      <img src="imagen2.png" alt="Mixtle">
+      <div class="callout" style="margin:0; flex:1;">
+        <p><strong>Analogía de Mixtle:</strong> la cardinalidad 1:1 es como el matrimonio civil en México (una persona, un acta a la vez); la 1:N es como un maestro y sus grupos (un maestro, varios grupos, pero cada grupo tiene un solo maestro titular); y la N:M es como los préstamos de una biblioteca: un usuario pide varios libros a lo largo del ciclo, y un mismo libro pasa por varios usuarios.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- 2.3 -->
+  <section class="section">
+    <h2 class="section-title">2.3 Diagramas ER</h2>
+    <p>Para dibujar un modelo E-R usamos una notación estándar, en la que cada figura geométrica representa un tipo de elemento:</p>
+
+    <figure>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 700 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Notación de un diagrama entidad-relación">
+          <rect x="30" y="55" width="140" height="50" rx="4" fill="var(--surface)" stroke="var(--guinda)" stroke-width="2"/>
+          <text x="100" y="85" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="var(--ink)">ENTIDAD</text>
+          <text x="100" y="130" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--ink-secondary)">Rectángulo</text>
+
+          <ellipse cx="350" cy="80" rx="80" ry="32" fill="var(--guinda-light)" stroke="#D8A8BA" stroke-width="2"/>
+          <text x="350" y="85" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="var(--guinda-dark)">atributo</text>
+          <text x="350" y="130" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--ink-secondary)">Óvalo</text>
+
+          <polygon points="600,50 660,80 600,110 540,80" fill="var(--guinda)"/>
+          <text x="600" y="84" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#fff">relación</text>
+          <text x="600" y="130" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--ink-secondary)">Rombo</text>
+        </svg>
+      </div>
+      <figcaption>Notación clásica de Chen para diagramas entidad-relación.</figcaption>
+    </figure>
+
+    <div class="callout">
+      <p>Junto a cada línea que conecta una entidad con una relación se anota la cardinalidad correspondiente (1, N o M), lo que permite leer el diagrama como una oración completa: "un USUARIO puede PRESTAR muchos LIBROS".</p>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- 2.4 -->
+  <section class="section">
+    <h2 class="section-title">2.4 Casos prácticos de modelado</h2>
+    <p>Apliquemos lo aprendido al caso de la biblioteca escolar que planteamos al inicio de la clase.</p>
+
+    <div class="example-block">
+      <div class="example-header">Caso: sistema de una biblioteca escolar</div>
+      <div class="example-body">
+        <div class="example-statement">La biblioteca necesita registrar los libros disponibles, a los usuarios que pueden pedirlos prestados, y el historial de cada préstamo con su fecha de salida y su fecha de devolución.</div>
+        <ul class="step-list">
+          <li><span class="step-n">1</span><span class="step-content"><strong>Identificar entidades:</strong> LIBRO y USUARIO son claramente objetos del mundo real sobre los que necesitamos guardar información.</span></li>
+          <li><span class="step-n">2</span><span class="step-content"><strong>Definir atributos:</strong> LIBRO (ISBN, título, autor, año, categoría); USUARIO (matrícula, nombre, correo, tipo de usuario).</span></li>
+          <li><span class="step-n">3</span><span class="step-content"><strong>Identificar la relación:</strong> un USUARIO <em>presta</em> uno o varios LIBRO(s), y un mismo LIBRO puede ser prestado a distintos USUARIO(s) a lo largo del tiempo: cardinalidad N:M.</span></li>
+          <li><span class="step-n">4</span><span class="step-content"><strong>Atributos de la relación:</strong> como la cardinalidad es N:M, la propia relación "PRÉSTAMO" necesita sus propios atributos: fecha de préstamo y fecha de devolución.</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <figure>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagrama entidad-relación del caso de la biblioteca escolar">
+          <rect x="30" y="80" width="150" height="55" rx="4" fill="var(--surface)" stroke="var(--guinda)" stroke-width="2"/>
+          <text x="105" y="112" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">USUARIO</text>
+
+          <text x="105" y="35" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="var(--ink-secondary)">matrícula · nombre</text>
+          <text x="105" y="49" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="var(--ink-secondary)">correo · tipo</text>
+
+          <polygon points="350,72 420,107 350,142 280,107" fill="var(--guinda)"/>
+          <text x="350" y="103" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#fff">PRESTA</text>
+          <text x="350" y="117" text-anchor="middle" font-family="Inter, sans-serif" font-size="9.5" fill="rgba(255,255,255,.85)">(N:M)</text>
+
+          <ellipse cx="350" cy="185" rx="78" ry="26" fill="var(--guinda-light)" stroke="#D8A8BA" stroke-width="2"/>
+          <text x="350" y="182" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="var(--guinda-dark)">fecha préstamo</text>
+          <text x="350" y="195" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="var(--guinda-dark)">fecha devolución</text>
+
+          <rect x="520" y="80" width="150" height="55" rx="4" fill="var(--surface)" stroke="var(--guinda)" stroke-width="2"/>
+          <text x="595" y="112" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="var(--ink)">LIBRO</text>
+
+          <text x="595" y="35" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="var(--ink-secondary)">ISBN · título</text>
+          <text x="595" y="49" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="var(--ink-secondary)">autor · categoría</text>
+
+          <line x1="180" y1="107" x2="280" y2="107" stroke="var(--guinda-rule)" stroke-width="2.5"/>
+          <text x="215" y="100" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="var(--guinda)">N</text>
+
+          <line x1="420" y1="107" x2="520" y2="107" stroke="var(--guinda-rule)" stroke-width="2.5"/>
+          <text x="480" y="100" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="var(--guinda)">M</text>
+
+          <line x1="350" y1="142" x2="350" y2="159" stroke="#D8A8BA" stroke-width="2"/>
+        </svg>
+      </div>
+      <figcaption>Diagrama entidad-relación del caso de la biblioteca escolar.</figcaption>
+    </figure>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ACTIVIDAD -->
+  <section class="section">
+    <h2 class="section-title">Actividad de aprendizaje</h2>
+    <div class="example-block">
+      <div class="example-header">Diagrama Entidad-Relación (DER) — producto de la Unidad 2</div>
+      <div class="example-body">
+        <p>En equipos, elijan un caso real distinto al de la biblioteca (por ejemplo: una tienda, un consultorio médico o un gimnasio) y diseñen su propio Diagrama Entidad-Relación, considerando:</p>
+        <ul class="step-list">
+          <li><span class="step-n">1</span><span class="step-content">Al menos tres entidades relevantes para el negocio elegido.</span></li>
+          <li><span class="step-n">2</span><span class="step-content">Los atributos principales de cada entidad, incluyendo un identificador único.</span></li>
+          <li><span class="step-n">3</span><span class="step-content">Las relaciones entre entidades con su cardinalidad correctamente definida (1:1, 1:N o N:M).</span></li>
+        </ul>
+        <div class="result-line">Entregable: Diagrama Entidad-Relación (DER) — 20% de la calificación final de la asignatura.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CIERRE -->
+  <section class="section">
+    <h2 class="section-title">Para cerrar</h2>
+    <p>Cada equipo expondrá brevemente su DER ante el grupo, explicando por qué eligió esa cardinalidad para cada relación. El grupo retroalimentará identificando aciertos y posibles ajustes en la semántica del modelo.</p>
+    <div class="mixtle-tip">
+      <img src="imagen2.png" alt="Mixtle">
+      <div class="callout" style="margin:0; flex:1;">
+        <p><strong>Mixtle recuerda:</strong> un buen DER se lee casi como una oración en español. Si no puedes leer tu diagrama en voz alta y que tenga sentido, probablemente algo en el modelo todavía necesita ajustarse.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCLUSIÓN -->
+  <section class="section">
+    <h2 class="section-title">Conclusión</h2>
+    <p>El modelo entidad-relación es el puente entre un requerimiento de negocio, expresado en lenguaje cotidiano, y una base de datos funcional. Aprender a identificar entidades, atributos, relaciones y cardinalidades con precisión es la habilidad que permitirá, en la siguiente unidad, transformar este diagrama en un esquema relacional libre de redundancias mediante las reglas de normalización.</p>
+  </section>
+
+  <!-- REFERENCIAS -->
+  <section class="section">
+    <h2 class="section-title">Referencias bibliográficas</h2>
+    <ul>
+      <li>Dehghani, Z. (2022). <em>Data Mesh</em>. Marcombo.</li>
+      <li>Silberschatz, A., Korth, H. F. y Sudarshan, S. (2021). <em>Database system concepts</em> (7.ª ed.). McGraw-Hill.</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <span><strong>IEDEP</strong> · Bases de Datos I — Unidad 2</span>
+  <span>Mtro. José Armando Vera Rodríguez · Sábado 19 de septiembre de 2026</span>
+</footer>
+
+</body>
+</html>
