@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Temario — Bases de Datos I</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .mixtle-card {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+  }
+  .mixtle-card img { width: 100px; flex-shrink: 0; }
+  @media (max-width: 600px) {
+    .mixtle-card { flex-direction: column; text-align: center; }
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: .9rem;
+    margin: 1.25rem 0;
+  }
+  @media (max-width: 700px) {
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  .stat-card {
+    background: var(--off-white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    text-align: center;
+  }
+  .stat-card .stat-num {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--guinda);
+    line-height: 1;
+  }
+  .stat-card .stat-label {
+    font-family: var(--font-ui);
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--ink-secondary);
+    margin-top: .35rem;
+  }
+
+  .unit-card {
+    background: var(--off-white);
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--guinda);
+    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 1.5rem;
+  }
+  .unit-card .unit-head {
+    display: flex;
+    align-items: baseline;
+    gap: .75rem;
+    margin-bottom: .6rem;
+    flex-wrap: wrap;
+  }
+  .unit-card .unit-num {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--guinda);
+  }
+  .unit-card h3 { margin-bottom: 0; }
+  .unit-card .unit-fin {
+    color: var(--ink-secondary);
+    font-size: .96rem;
+    margin-bottom: 1rem;
+  }
+  .unit-card .unit-subtemas {
+    columns: 2;
+    column-gap: 2rem;
+    margin-bottom: 1rem;
+  }
+  @media (max-width: 600px) {
+    .unit-card .unit-subtemas { columns: 1; }
+  }
+  .unit-card .unit-subtemas li { font-size: .93rem; break-inside: avoid; }
+
+  .roadmap {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+    margin: 1.5rem 0 .5rem;
+    padding-top: 10px;
+  }
+  .roadmap::before {
+    content: "";
+    position: absolute;
+    top: 24px;
+    left: 5%;
+    right: 5%;
+    height: 3px;
+    background: var(--border-strong);
+    z-index: 0;
+  }
+  .roadmap .stop {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    flex: 1;
+    padding: 0 .3rem;
+  }
+  .roadmap .dot {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--guinda);
+    color: #fff;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: .85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto .5rem;
+  }
+  .roadmap .stop-label {
+    font-family: var(--font-ui);
+    font-size: .78rem;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo-wrap"><img src="imagen1.png" alt="Logotipo IEDEP"></div>
+  <div class="header-text">
+    <span class="inst-name">Instituto de Educación Digital del Estado de Puebla</span>
+    <span class="doc-title">Temario de la asignatura · Licenciatura en Sistemas Computacionales</span>
+  </div>
+</header>
+
+<section class="class-hero">
+  <span class="class-label">Temario del curso</span>
+  <h1>Bases de Datos I</h1>
+  <span class="class-subtitle">Guía general de la asignatura: unidades, temas, evaluación y bibliografía</span>
+  <div class="meta-row">
+    <div class="meta-item">Programa educativo<span>Lic. en Sistemas Computacionales</span></div>
+    <div class="meta-item">Asignatura<span>Bases de Datos I</span></div>
+    <div class="meta-item">Cuatrimestre<span>Cuarto</span></div>
+    <div class="meta-item">Créditos<span>7</span></div>
+  </div>
+</section>
+
+<main class="page-wrapper">
+
+  <!-- BIENVENIDA -->
+  <section class="section">
+    <div class="card mixtle-card">
+      <img src="imagen2.png" alt="Mixtle, guía del curso">
+      <div>
+        <span class="card-title">Bienvenido o bienvenida a Bases de Datos I</span>
+        <p>Soy Mixtle y te acompañaré a lo largo del curso. Aquí encontrarás el mapa completo de la asignatura: qué vamos a aprender, en qué orden, cómo se evaluará cada entrega y qué libros te pueden servir de apoyo. Guarda esta página: la usaremos como referencia durante todo el cuatrimestre.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROPÓSITO -->
+  <section class="section">
+    <h2 class="section-title">Propósito general de la asignatura</h2>
+    <p>Diseñar esquemas de bases de datos relacionales mediante la aplicación rigurosa de reglas de normalización y el uso de lenguaje SQL en entornos simulados, con el propósito de garantizar la integridad de la información institucional y establecer los cimientos técnicos para su administración avanzada.</p>
+    <ul>
+      <li>Relacionar los fundamentos teóricos de los modelos entidad-relación y relacional mediante un análisis comparativo de sus niveles de abstracción y reglas de negocio, con el fin de seleccionar la arquitectura de información más adecuada para las necesidades de una organización.</li>
+      <li>Proyectar esquemas de bases de datos robustos y libres de redundancia a través de la aplicación estricta de las formas normales y la codificación de scripts DDL en lenguaje SQL, para garantizar la integridad referencial y la eficiencia operativa del sistema.</li>
+      <li>Valorar la importancia de la consistencia y la calidad de la información, partiendo de la identificación crítica de anomalías de actualización, inserción y borrado, que permita asumir un compromiso ético con la seguridad y preservación de los activos digitales.</li>
+    </ul>
+  </section>
+
+  <!-- HORAS -->
+  <section class="section">
+    <h2 class="section-title">Carga horaria</h2>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num">32</div><div class="stat-label">Horas conducidas</div></div>
+      <div class="stat-card"><div class="stat-num">80</div><div class="stat-label">Horas independientes</div></div>
+      <div class="stat-card"><div class="stat-num">112</div><div class="stat-label">Horas totales</div></div>
+      <div class="stat-card"><div class="stat-num">7</div><div class="stat-label">Créditos</div></div>
+    </div>
+  </section>
+
+  <!-- MAPA DEL CURSO -->
+  <section class="section">
+    <h2 class="section-title">Mapa del curso</h2>
+    <div class="roadmap">
+      <div class="stop"><div class="dot">1</div><div class="stop-label">Fundamentos de<br>Bases de Datos</div></div>
+      <div class="stop"><div class="dot">2</div><div class="stop-label">Modelado<br>de Datos</div></div>
+      <div class="stop"><div class="dot">3</div><div class="stop-label">Normalización y<br>Diseño Lógico</div></div>
+      <div class="stop"><div class="dot">4</div><div class="stop-label">Lenguaje<br>SQL Básico</div></div>
+      <div class="stop"><div class="dot">5</div><div class="stop-label">Seguridad y<br>Buenas Prácticas</div></div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Unidad</th>
+          <th>Horas conducidas</th>
+          <th>Horas independientes</th>
+          <th>Producto de evaluación</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1. Fundamentos de Bases de Datos</td><td>4</td><td>10</td><td>Cuadro comparativo técnico (20%)</td></tr>
+        <tr><td>2. Modelado de Datos</td><td>4</td><td>10</td><td>Diagrama Entidad-Relación — DER (20%)</td></tr>
+        <tr><td>3. Normalización y Diseño Lógico</td><td>8</td><td>20</td><td>Esquema relacional y reporte de normalización (20% + 20%)</td></tr>
+        <tr><td>4. Lenguaje SQL Básico</td><td>8</td><td>20</td><td>Script SQL (DDL) ejecutable (20%)</td></tr>
+        <tr><td>5. Seguridad y Buenas Prácticas en Bases de Datos</td><td>8</td><td>20</td><td>Evaluación formativa (no acreditativa)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- DETALLE POR UNIDAD -->
+  <section class="section">
+    <h2 class="section-title">Detalle por unidad</h2>
+
+    <div class="unit-card">
+      <div class="unit-head"><span class="unit-num">1</span><h3>Fundamentos de Bases de Datos</h3></div>
+      <p class="unit-fin">Identificar y explicar los fundamentos de las bases de datos, comparando modelos y arquitecturas mediante ejemplos prácticos, para comprender la base conceptual para diseñar sistemas de información.</p>
+      <ul class="unit-subtemas">
+        <li>1.1 Conceptos de datos e información</li>
+        <li>1.2 Evolución de sistemas de almacenamiento</li>
+        <li>1.3 Modelos de datos</li>
+        <li>1.4 Arquitectura de un SGBD</li>
+      </ul>
+      <div class="result-line">Producto de evaluación: cuadro comparativo técnico — 20% de la calificación final.</div>
+    </div>
+
+    <div class="unit-card">
+      <div class="unit-head"><span class="unit-num">2</span><h3>Modelado de Datos</h3></div>
+      <p class="unit-fin">Diseñar modelos conceptuales de bases de datos, elaborando diagramas ER a partir de requerimientos, para representar de manera clara la estructura de la información.</p>
+      <ul class="unit-subtemas">
+        <li>2.1 Modelo entidad-relación</li>
+        <li>2.2 Atributos, entidades y relaciones</li>
+        <li>2.3 Diagramas ER</li>
+        <li>2.4 Casos prácticos de modelado</li>
+      </ul>
+      <div class="result-line">Producto de evaluación: Diagrama Entidad-Relación (DER) — 20% de la calificación final.</div>
+    </div>
+
+    <div class="unit-card">
+      <div class="unit-head"><span class="unit-num">3</span><h3>Normalización y Diseño Lógico</h3></div>
+      <p class="unit-fin">Aplicar técnicas de normalización en el diseño lógico, resolviendo ejercicios de normalización y transformando modelos, para optimizar la estructura de datos y evitar inconsistencias.</p>
+      <ul class="unit-subtemas">
+        <li>3.1 Formas normales (1FN, 2FN, 3FN, BCNF)</li>
+        <li>3.2 Redundancia y dependencia funcional</li>
+        <li>3.3 Transformación de modelos ER a tablas</li>
+      </ul>
+      <div class="result-line">Producto de evaluación: esquema relacional lógico (20%) y reporte de normalización (20%) — 40% de la calificación final.</div>
+    </div>
+
+    <div class="unit-card">
+      <div class="unit-head"><span class="unit-num">4</span><h3>Lenguaje SQL Básico</h3></div>
+      <p class="unit-fin">Implementar bases de datos mediante SQL, escribiendo y ejecutando sentencias en un SGBD, para crear y manipular estructuras de datos de manera eficiente.</p>
+      <ul class="unit-subtemas">
+        <li>4.1 DDL (CREATE, ALTER, DROP)</li>
+        <li>4.2 DML (INSERT, UPDATE, DELETE)</li>
+        <li>4.3 Consultas simples (SELECT)</li>
+        <li>4.4 Restricciones y llaves</li>
+      </ul>
+      <div class="result-line">Producto de evaluación: script SQL (DDL) ejecutable — 20% de la calificación final.</div>
+    </div>
+
+    <div class="unit-card">
+      <div class="unit-head"><span class="unit-num">5</span><h3>Seguridad y Buenas Prácticas en Bases de Datos</h3></div>
+      <p class="unit-fin">Evaluar riesgos y aplicar medidas de seguridad básicas, configurando usuarios y permisos en un SGBD, para proteger la integridad y disponibilidad de la información.</p>
+      <ul class="unit-subtemas">
+        <li>5.1 Usuarios y roles</li>
+        <li>5.2 Permisos y privilegios</li>
+        <li>5.3 Respaldo y recuperación básica</li>
+        <li>5.4 Ética y responsabilidad digital</li>
+      </ul>
+      <div class="result-line">Evaluación formativa (no acreditativa): participación y evidencia práctica de configuración de seguridad.</div>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- CRITERIOS DE EVALUACIÓN -->
+  <section class="section">
+    <h2 class="section-title">Criterios de evaluación de la asignatura</h2>
+    <p>La calificación final se integra por cinco productos de aprendizaje, cada uno con el mismo peso, que en conjunto documentan el proceso completo de diseño de una base de datos: desde el análisis conceptual hasta su implementación segura.</p>
+    <table>
+      <thead>
+        <tr><th>Criterio</th><th>Porcentaje</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Cuadro comparativo técnico</td><td>20%</td></tr>
+        <tr><td>Diagrama Entidad-Relación (DER)</td><td>20%</td></tr>
+        <tr><td>Esquema relacional lógico</td><td>20%</td></tr>
+        <tr><td>Reporte de normalización</td><td>20%</td></tr>
+        <tr><td>Script SQL (DDL) ejecutable</td><td>20%</td></tr>
+        <tr><td><strong>Total</strong></td><td><strong>100%</strong></td></tr>
+      </tbody>
+    </table>
+    <div class="callout note">
+      <p>La evaluación tiene carácter tanto formativo (seguimiento continuo del aprendizaje, no acreditativo) como acreditativo. Las actividades independientes —organizadores de información, diagramas, mapas conceptuales, infografías, síntesis y ensayos— refuerzan la comprensión de cada unidad, aunque no todas se traduzcan en una calificación directa.</p>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- METODOLOGÍA -->
+  <section class="section">
+    <h2 class="section-title">¿Cómo trabajaremos?</h2>
+    <p>A lo largo del curso combinaremos distintas estrategias didácticas, según el tema de cada sesión:</p>
+    <ul>
+      <li><strong>Enseñanza colaborativa:</strong> comparación en equipo de arquitecturas de SGBD y modelos de datos.</li>
+      <li><strong>Aprendizaje Basado en Casos:</strong> análisis de casos reales para identificar entidades, atributos y relaciones.</li>
+      <li><strong>Aprendizaje Basado en Problemas:</strong> resolución guiada de ejercicios para transformar diagramas ER en esquemas relacionales.</li>
+      <li><strong>Aprendizaje experiencial:</strong> talleres prácticos de normalización aplicando 1FN, 2FN y 3FN.</li>
+      <li><strong>Uso de tecnologías educativas:</strong> demostraciones técnicas de sintaxis SQL en un SGBD real.</li>
+    </ul>
+  </section>
+
+  <!-- RECURSOS -->
+  <section class="section">
+    <h2 class="section-title">Recursos y herramientas</h2>
+    <ul>
+      <li><strong>SGBD:</strong> MySQL, PostgreSQL, Oracle, SQL Server.</li>
+      <li><strong>Modelado:</strong> MySQL Workbench, Lucidchart, Draw.io.</li>
+      <li><strong>Práctica:</strong> DB Fiddle, SQLite Studio.</li>
+      <li><strong>Colaboración y evaluación:</strong> Moodle, Microsoft Teams, Google Workspace.</li>
+      <li><strong>Digitales:</strong> biblioteca virtual y recursos educativos abiertos de revistas académicas.</li>
+      <li><strong>Inteligencia artificial generativa</strong> como apoyo para la investigación y el estudio.</li>
+    </ul>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- BIBLIOGRAFÍA -->
+  <section class="section">
+    <h2 class="section-title">Bibliografía por unidad</h2>
+
+    <h4 class="text-guinda mb-1">Unidad 1</h4>
+    <ul class="mb-2">
+      <li>Ahijado Sánchez, A. (2022). <em>Bases de datos</em>. McGraw-Hill.</li>
+      <li>Silberschatz, A., Korth, H. F. y Sudarshan, S. (2021). <em>Database system concepts</em> (7.ª ed.). McGraw-Hill.</li>
+    </ul>
+
+    <h4 class="text-guinda mb-1">Unidad 2</h4>
+    <ul class="mb-2">
+      <li>Dehghani, Z. (2022). <em>Data Mesh</em>. Marcombo.</li>
+      <li>Silberschatz, A., Korth, H. F. y Sudarshan, S. (2021). <em>Database system concepts</em> (7.ª ed.). McGraw-Hill.</li>
+    </ul>
+
+    <h4 class="text-guinda mb-1">Unidad 3</h4>
+    <ul class="mb-2">
+      <li>Silberschatz, A., Korth, H. F. y Sudarshan, S. (2021). <em>Database system concepts</em> (7.ª ed.). McGraw-Hill.</li>
+      <li>Piñeiro, J. O. S. E. (2024). <em>Diseño de bases de datos relacionales</em>. Ediciones Paraninfo, SA.</li>
+    </ul>
+
+    <h4 class="text-guinda mb-1">Unidad 4</h4>
+    <ul class="mb-2">
+      <li>Kleppmann, M. (2017). <em>Designing data-intensive applications: The big ideas behind reliable, scalable, and maintainable systems</em>. O'Reilly Media.</li>
+      <li>Pratt, P. J. y Last, M. Z. (2020). <em>SQL essentials</em> (3.ª ed.). Pearson.</li>
+      <li>Socas Gutiérrez, R. y Gómez Deniz, L. (2023). <em>Bases de datos: Teoría y práctica aplicada a ingeniería del software</em>. McGraw-Hill.</li>
+    </ul>
+
+    <h4 class="text-guinda mb-1">Unidad 5</h4>
+    <ul class="mb-2">
+      <li>Martínez, M. R. y Pincay-Ponce, J. I. (2024). Buenas prácticas de seguridad para la protección de la privacidad con datos abiertos. <em>Revista Científica de Informática ENCRIPTAR</em>, 7(14), 187-205.</li>
+      <li>Socas Gutiérrez, R. y Gómez Deniz, L. (2023). <em>Bases de datos: Teoría y práctica aplicada a ingeniería del software</em>. McGraw-Hill.</li>
+    </ul>
+
+    <h4 class="text-guinda mb-1">Recursos adicionales</h4>
+    <ul>
+      <li>Huang, W. y Shah, S. (2023). <em>Fundamentals of data engineering: Plan and build robust data systems</em>. O'Reilly Media.</li>
+      <li>PostgreSQL Global Development Group. (2024). <em>PostgreSQL 16 documentation</em>. PostgreSQL. https://www.postgresql.org/docs/16/</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <span><strong>IEDEP</strong> · Bases de Datos I — Temario del curso</span>
+  <span>Mtro. José Armando Vera Rodríguez</span>
+</footer>
+
+</body>
+</html>
