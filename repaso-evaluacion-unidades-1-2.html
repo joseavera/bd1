@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Repaso previo a la evaluación — Unidades 1 y 2</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .mixtle-card { display: flex; gap: 1.5rem; align-items: center; }
+  .mixtle-card img { width: 110px; flex-shrink: 0; }
+  @media (max-width: 600px) { .mixtle-card { flex-direction: column; text-align: center; } }
+
+  .mixtle-tip { display: flex; gap: .9rem; align-items: flex-start; }
+  .mixtle-tip img { width: 46px; flex-shrink: 0; margin-top: .1rem; }
+
+  .table-scroll { overflow-x: auto; margin: 1.1rem 0; }
+  .table-scroll table { margin: 0; min-width: 560px; }
+
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; margin: 1.1rem 0; }
+  @media (max-width: 700px) { .pair { grid-template-columns: 1fr; } }
+  .mini-card {
+    background: var(--off-white); border: 1px solid var(--border); border-top: 4px solid var(--guinda);
+    border-radius: var(--radius-md); padding: 1rem 1.1rem;
+  }
+  .mini-card h4 { color: var(--guinda-dark); margin-bottom: .35rem; }
+  .mini-card p { font-size: .94rem; }
+
+  .check-list { list-style: none; padding: 0; margin: 1rem 0; }
+  .check-list li { position: relative; padding-left: 1.9rem; margin-bottom: .7rem; }
+  .check-list li::before {
+    content: "\2713"; position: absolute; left: 0; top: .05rem; width: 1.3rem; height: 1.3rem;
+    border-radius: 50%; background: var(--guinda); color: #fff; font-family: var(--font-ui);
+    font-size: .75rem; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+
+  .qa {
+    border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: .8rem; background: #fff;
+  }
+  .qa summary {
+    cursor: pointer; list-style: none; padding: .9rem 1.1rem; font-weight: 600;
+    display: flex; gap: .8rem; align-items: flex-start;
+  }
+  .qa summary::-webkit-details-marker { display: none; }
+  .qa summary .qn {
+    flex-shrink: 0; width: 1.7rem; height: 1.7rem; border-radius: 50%; background: var(--guinda); color: #fff;
+    font-family: var(--font-ui); font-size: .8rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .qa summary::after {
+    content: "Ver respuesta"; margin-left: auto; flex-shrink: 0; font-family: var(--font-ui); font-size: .72rem;
+    font-weight: 600; color: var(--guinda); border: 1px solid #D8A8BA; background: var(--guinda-light);
+    border-radius: 999px; padding: .15rem .7rem;
+  }
+  .qa[open] summary::after { content: "Ocultar"; }
+  .qa .ans { padding: 0 1.1rem 1rem 3.6rem; font-size: .96rem; }
+  .qa:focus-within { box-shadow: 0 0 0 3px var(--guinda-light); }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo-wrap"><img src="imagen1.png" alt="Logotipo IEDEP"></div>
+  <div class="header-text">
+    <span class="inst-name">Instituto de Educación Digital del Estado de Puebla</span>
+    <span class="doc-title">Material de repaso · Licenciatura en Sistemas Computacionales</span>
+  </div>
+</header>
+
+<section class="class-hero">
+  <span class="class-label">Repaso · Unidades 1 y 2</span>
+  <h1>Repaso rápido antes de la evaluación</h1>
+  <span class="class-subtitle">Lo esencial de Fundamentos y Modelado de Datos, en una sola lectura</span>
+  <div class="meta-row">
+    <div class="meta-item">Programa educativo<span>Lic. en Sistemas Computacionales</span></div>
+    <div class="meta-item">Asignatura<span>Bases de Datos I</span></div>
+    <div class="meta-item">Unidades<span>1 y 2</span></div>
+    <div class="meta-item">Temas<span>1.1 a 2.4</span></div>
+  </div>
+</section>
+
+<main class="page-wrapper">
+
+  <!-- INTRO -->
+  <section class="section">
+    <div class="card mixtle-card">
+      <img src="imagen2.png" alt="Mixtle, guía del repaso">
+      <div>
+        <span class="card-title">Hola, soy Mixtle</span>
+        <p>La evaluación presenta situaciones de empresas reales y te pide decidir con criterio, no repetir definiciones de memoria. Por eso este repaso resume lo que debes saber y, sobre todo, <strong>cómo reconocerlo</strong> dentro de un caso. Léelo con calma y resuelve la autoevaluación del final.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- UNIDAD 1 -->
+  <section class="section">
+    <h2 class="section-title">Unidad 1 · Fundamentos de bases de datos</h2>
+
+    <h3>1.1 Dato e información</h3>
+    <div class="pair">
+      <div class="mini-card">
+        <h4>Dato</h4>
+        <p>Valor aislado, sin contexto ni significado por sí mismo. Ejemplo: <span class="text-mono">"35"</span>, <span class="text-mono">"Cholula"</span>.</p>
+      </div>
+      <div class="mini-card">
+        <h4>Información</h4>
+        <p>Datos procesados, organizados y relacionados que sirven para decidir. Ejemplo: "La sucursal de Cholula vendió 35 piezas el lunes".</p>
+      </div>
+    </div>
+
+    <h3>1.2 Evolución del almacenamiento</h3>
+    <p>Papel, archivos planos, bases de datos jerárquicas y en red, y finalmente los <strong>SGBD relacionales</strong>. Cada etapa buscó resolver tres problemas que aparecen una y otra vez en los casos:</p>
+    <ul class="check-list">
+      <li><strong>Redundancia:</strong> el mismo dato guardado en varios lugares.</li>
+      <li><strong>Inconsistencia:</strong> las copias de un mismo dato dejan de coincidir entre sí.</li>
+      <li><strong>Dependencia del formato:</strong> los programas se rompen cuando cambia la estructura física de los archivos.</li>
+    </ul>
+
+    <h3>1.3 Modelos de datos</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Modelo</th><th>Cómo organiza los datos</th><th>Pista para reconocerlo</th></tr></thead>
+        <tbody>
+          <tr><td>Jerárquico</td><td>Árbol padre-hijo</td><td>Cada hijo tiene un solo padre; no representa bien relaciones muchos a muchos.</td></tr>
+          <tr><td>En red</td><td>Malla de registros con varios padres</td><td>Admite varios padres, pero se consulta navegando por rutas definidas de antemano.</td></tr>
+          <tr><td>Relacional</td><td>Tablas vinculadas por claves</td><td>Consultas flexibles y declarativas con SQL; es el modelo del curso.</td></tr>
+          <tr><td>Orientado a objetos</td><td>Objetos con datos y comportamiento</td><td>Se parece a la programación orientada a objetos; útil para datos complejos.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>1.4 Arquitectura de un SGBD</h3>
+    <p>Tres niveles de abstracción (ANSI/SPARC). Lo que más se evalúa es <strong>qué nivel cambia</strong> y qué tipo de independencia lo protege:</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Nivel</th><th>Qué describe</th><th>Si cambia...</th></tr></thead>
+        <tbody>
+          <tr><td>Externo</td><td>La vista que cada usuario o aplicación tiene de los datos</td><td>Solo afecta a quienes usan esa vista.</td></tr>
+          <tr><td>Conceptual</td><td>El esquema completo: entidades, relaciones y reglas</td><td>Las vistas que no usan lo modificado siguen igual: <strong>independencia lógica</strong>.</td></tr>
+          <tr><td>Interno</td><td>Cómo se guardan físicamente los datos en disco</td><td>El esquema y las aplicaciones no se ven afectados: <strong>independencia física</strong>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mixtle-tip">
+      <img src="imagen2.png" alt="Mixtle">
+      <div class="callout" style="margin:0; flex:1;">
+        <p><strong>Truco de Mixtle:</strong> piensa en un edificio. Los inquilinos ven su departamento (externo), la administración tiene el plano completo (conceptual) y la cimentación y la tubería sostienen todo sin que nadie las vea (interno). Cambiar tubería no obliga a rediseñar el plano.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- UNIDAD 2 -->
+  <section class="section">
+    <h2 class="section-title">Unidad 2 · Modelado de datos</h2>
+
+    <h3>2.1 y 2.2 Entidades, atributos y relaciones</h3>
+    <p>Una oración resume el modelo: la <strong>entidad</strong> es el sustantivo, el <strong>atributo</strong> es el adjetivo que lo describe y la <strong>relación</strong> es el verbo que conecta dos sustantivos.</p>
+
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Tipo de atributo</th><th>Cómo identificarlo</th><th>Ejemplo</th></tr></thead>
+        <tbody>
+          <tr><td>Simple</td><td>No se divide en partes con sentido</td><td>Correo electrónico</td></tr>
+          <tr><td>Compuesto</td><td>Se descompone en subatributos</td><td>Domicilio (calle, número, colonia)</td></tr>
+          <tr><td>Multivaluado</td><td>Puede tener varios valores a la vez</td><td>Teléfonos de un cliente</td></tr>
+          <tr><td>Derivado</td><td>Se calcula a partir de otro dato</td><td>Edad, a partir de la fecha de nacimiento</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Cardinalidad</h3>
+    <div class="pair">
+      <div class="mini-card">
+        <h4>1:1 y 1:N</h4>
+        <p>1:1, un elemento se asocia con exactamente uno del otro lado. 1:N, un elemento se asocia con muchos, pero cada uno de esos "muchos" pertenece a uno solo.</p>
+      </div>
+      <div class="mini-card">
+        <h4>N:M</h4>
+        <p>Muchos con muchos, en ambos sentidos. Los datos que nacen de la asociación (fecha, cantidad, estado) son <strong>atributos de la relación</strong>, no de ninguna de las dos entidades.</p>
+      </div>
+    </div>
+
+    <h3>2.3 y 2.4 Del caso al diagrama</h3>
+    <ul class="check-list">
+      <li>Subraya los <strong>sustantivos</strong> del caso: son candidatos a entidad.</li>
+      <li>Convierte las <strong>características</strong> en atributos y asegúrate de que cada entidad tenga un identificador único.</li>
+      <li>Lee cada regla en <strong>los dos sentidos</strong> ("un A tiene muchos B" y "un B pertenece a cuántos A") para fijar la cardinalidad.</li>
+      <li>Notación de Chen: rectángulo para la entidad, óvalo para el atributo y rombo para la relación.</li>
+    </ul>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ESTRATEGIA -->
+  <section class="section">
+    <h2 class="section-title">Cómo abordar un reactivo de escenario</h2>
+    <ul class="check-list">
+      <li>Lee primero la <strong>pregunta final</strong> y después el caso: sabrás qué buscar.</li>
+      <li>Fíjate en palabras como <em>MÁS adecuado</em>, <em>MEJOR</em> o <em>MÁS directo</em>: varias opciones pueden sonar bien, pero una responde mejor al caso.</li>
+      <li>Desconfía de las opciones con absolutos como "el único", "elimina por completo" o "siempre".</li>
+      <li>Si el reactivo pide seleccionar <strong>dos</strong> opciones, ambas deben ser correctas; revisa cada una por separado.</li>
+      <li>Administra el tiempo: avanza, marca lo dudoso y regresa al final.</li>
+    </ul>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- AUTOEVALUACIÓN -->
+  <section class="section">
+    <h2 class="section-title">Autoevaluación rápida</h2>
+    <p>Intenta responder mentalmente antes de abrir cada respuesta.</p>
+
+    <details class="qa">
+      <summary><span class="qn">1</span><span>Un taller guarda en una sola columna varios teléfonos separados por comas. ¿Cómo debe tratarse ese dato en el modelo entidad-relación?</span></summary>
+      <div class="ans">Como un atributo <strong>multivaluado</strong>: un mismo cliente puede tener varios teléfonos, así que no conviene guardarlos como un solo texto.</div>
+    </details>
+
+    <details class="qa">
+      <summary><span class="qn">2</span><span>Una universidad cambia el sistema de archivos en el que se almacenan sus datos y ninguna aplicación necesita modificarse. ¿Qué nivel cambió y qué principio se cumplió?</span></summary>
+      <div class="ans">Cambió el nivel <strong>interno</strong>, y se cumplió la <strong>independencia física</strong> de los datos.</div>
+    </details>
+
+    <details class="qa">
+      <summary><span class="qn">3</span><span>En una papelería, un cliente realiza muchos pedidos y cada pedido pertenece a un solo cliente. ¿Cuál es la cardinalidad?</span></summary>
+      <div class="ans"><strong>1:N</strong> de CLIENTE a PEDIDO.</div>
+    </details>
+
+    <details class="qa">
+      <summary><span class="qn">4</span><span>Un estudiante puede cursar varias materias y cada materia la cursan muchos estudiantes. ¿Dónde debe guardarse la calificación?</span></summary>
+      <div class="ans">Es una relación <strong>N:M</strong>, y la calificación depende de la pareja estudiante-materia, por lo que es un <strong>atributo de la relación</strong>.</div>
+    </details>
+
+    <details class="qa">
+      <summary><span class="qn">5</span><span>¿Qué modelo organiza los datos como un árbol en el que cada registro hijo tiene un solo padre?</span></summary>
+      <div class="ans">El modelo <strong>jerárquico</strong>.</div>
+    </details>
+
+    <details class="qa">
+      <summary><span class="qn">6</span><span>La cifra "48" aparece sola en una hoja. Después se agrega: "48 pedidos entregados en el turno matutino de ayer". ¿Qué cambió?</span></summary>
+      <div class="ans">El valor aislado era un <strong>dato</strong>; al darle contexto y significado se convirtió en <strong>información</strong>.</div>
+    </details>
+
+    <div class="mixtle-tip">
+      <img src="imagen2.png" alt="Mixtle">
+      <div class="callout" style="margin:0; flex:1;">
+        <p><strong>Mixtle recuerda:</strong> si dudas entre dos opciones, vuelve al caso y busca qué problema concreto describe. La respuesta correcta casi siempre resuelve exactamente ese problema, no uno parecido.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCLUSIÓN -->
+  <section class="section">
+    <h2 class="section-title">Conclusión</h2>
+    <p>Distinguir dato de información, reconocer los problemas que dieron origen a los SGBD, elegir el modelo adecuado y entender los tres niveles de abstracción forman la base de la Unidad 1. La Unidad 2 los lleva a la práctica: convertir un caso de negocio en entidades, atributos y relaciones con la cardinalidad correcta. Si dominas estas ideas y las reconoces dentro de un escenario, estás listo para la evaluación.</p>
+  </section>
+
+  <!-- REFERENCIAS -->
+  <section class="section">
+    <h2 class="section-title">Referencias bibliográficas</h2>
+    <ul>
+      <li>Ahijado Sánchez, A. (2022). <em>Bases de datos</em>. McGraw-Hill.</li>
+      <li>Silberschatz, A., Korth, H. F. y Sudarshan, S. (2021). <em>Database system concepts</em> (7.ª ed.). McGraw-Hill.</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <span><strong>IEDEP</strong> · Bases de Datos I — Repaso, Unidades 1 y 2</span>
+  <span>Mtro. José Armando Vera Rodríguez</span>
+</footer>
+
+</body>
+</html>
