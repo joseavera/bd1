@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evaluación — Unidades 1 y 2 · Bases de Datos I</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* ---------- protección de contenido ---------- */
+  .screen, .site-header, .site-footer {
+    -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
+  }
+  img { -webkit-user-drag: none; user-drag: none; }
+  input[type="text"] { -webkit-user-select: text; user-select: text; }
+  .screen[hidden] { display: none !important; }
+
+  /* ---------- marca de agua ---------- */
+  #wm {
+    position: fixed; inset: 0; z-index: 60; pointer-events: none;
+    background-repeat: repeat; background-position: center;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+
+  /* ---------- botones y controles ---------- */
+  .btn {
+    font-family: var(--font-ui); font-weight: 600; font-size: .92rem;
+    padding: .7rem 1.4rem; border-radius: var(--radius-md);
+    border: 1.5px solid var(--guinda); background: var(--white); color: var(--guinda);
+    cursor: pointer; transition: background .15s, color .15s, box-shadow .15s;
+  }
+  .btn:hover:not(:disabled) { background: var(--guinda-light); }
+  .btn.primary { background: var(--guinda); color: #fff; }
+  .btn.primary:hover:not(:disabled) { background: var(--guinda-dark); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn:focus-visible, .qn:focus-visible, .opt:focus-within {
+    outline: 3px solid var(--guinda-rule); outline-offset: 2px;
+  }
+  .btn.flagged { background: #FFF4DB; border-color: #C58A00; color: #7A5300; }
+
+  /* ---------- pantalla de inicio ---------- */
+  .start-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+  .start-card { display: flex; gap: 1.5rem; align-items: center; }
+  .start-card img { width: 110px; flex-shrink: 0; }
+  @media (max-width: 600px) { .start-card { flex-direction: column; text-align: center; } }
+  .field-label {
+    font-family: var(--font-ui); font-size: .78rem; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--guinda-mid); display: block; margin-bottom: .4rem;
+  }
+  .field-input {
+    width: 100%; font-family: var(--font-ui); font-size: 1rem; padding: .8rem 1rem;
+    border: 1.5px solid var(--border-strong); border-radius: var(--radius-md); background: #fff; color: var(--ink);
+  }
+  .field-input:focus { outline: none; border-color: var(--guinda); box-shadow: 0 0 0 3px var(--guinda-light); }
+  .field-error { color: #B3261E; font-family: var(--font-ui); font-size: .85rem; margin-top: .5rem; min-height: 1.2rem; }
+  .info-list { list-style: none; padding: 0; margin: 0; }
+  .info-list li {
+    position: relative; padding-left: 1.6rem; margin-bottom: .6rem; font-size: .98rem;
+  }
+  .info-list li::before {
+    content: ""; position: absolute; left: 0; top: .6rem; width: .55rem; height: .55rem;
+    border-radius: 50%; background: var(--guinda-rule);
+  }
+
+  /* ---------- barra de evaluación ---------- */
+  .exam-bar {
+    position: sticky; top: 0; z-index: 30; background: #fff; border-bottom: 2px solid var(--guinda);
+    box-shadow: var(--shadow-sm); padding: .65rem 1.25rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  }
+  .exam-bar .bar-logo { height: 36px; width: auto; }
+  .exam-bar .who { font-family: var(--font-ui); font-size: .88rem; color: var(--ink-secondary); }
+  .exam-bar .who strong { color: var(--ink); }
+  .exam-bar .progress { font-family: var(--font-ui); font-size: .85rem; color: var(--ink-secondary); }
+  .timer {
+    margin-left: auto; font-family: var(--font-mono); font-size: 1.15rem; font-weight: 700;
+    color: var(--guinda); background: var(--guinda-light); border: 1px solid #D8A8BA;
+    padding: .25rem .9rem; border-radius: 999px; min-width: 5.2rem; text-align: center;
+  }
+  .timer.low { color: #fff; background: #B3261E; border-color: #B3261E; animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .65; } }
+
+  .exam-wrap { max-width: 900px; margin: 0 auto; padding: 1.75rem 2rem 5rem; }
+  body.away .exam-wrap { filter: blur(16px); }
+
+  .qnav { display: flex; gap: .55rem; flex-wrap: wrap; align-items: center; margin-bottom: 1.4rem; }
+  .qnav .legend { font-family: var(--font-ui); font-size: .75rem; color: var(--ink-muted); margin-left: .6rem; }
+  .qn {
+    position: relative; width: 42px; height: 42px; border-radius: 50%; cursor: pointer;
+    font-family: var(--font-ui); font-weight: 700; font-size: .92rem;
+    border: 1.5px solid var(--border-strong); background: #fff; color: var(--ink-secondary);
+  }
+  .qn.done { background: var(--guinda-light); border-color: #D8A8BA; color: var(--guinda-dark); }
+  .qn.cur { background: var(--guinda); border-color: var(--guinda); color: #fff; }
+  .qn.flag::after {
+    content: ""; position: absolute; top: -3px; right: -3px; width: 12px; height: 12px; border-radius: 50%;
+    background: #E0A100; border: 2px solid #fff;
+  }
+
+  .q-card { background: #fff; border: 1px solid var(--border); border-top: 4px solid var(--guinda); border-radius: var(--radius-lg); padding: 1.6rem 1.7rem; box-shadow: var(--shadow-sm); }
+  .q-meta { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .q-num { font-family: var(--font-ui); font-weight: 700; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--guinda); }
+  .q-type { font-family: var(--font-ui); font-size: .78rem; font-weight: 600; color: #7A5300; background: #FFF4DB; border: 1px solid #E8C86A; border-radius: 999px; padding: .15rem .75rem; }
+  .q-type.single { color: var(--ink-secondary); background: var(--surface); border-color: var(--border); }
+  .q-scenario {
+    background: var(--off-white); border-left: 4px solid var(--guinda-rule);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0; padding: 1rem 1.2rem; margin-bottom: 1.1rem; font-size: 1rem;
+  }
+  .q-stem { font-weight: 600; margin-bottom: 1.1rem; }
+  .opts { display: grid; gap: .7rem; }
+  .opt {
+    display: flex; gap: .9rem; align-items: flex-start; cursor: pointer;
+    border: 1.5px solid var(--border); background: #fff; border-radius: var(--radius-md);
+    padding: .85rem 1rem; transition: border-color .12s, background .12s;
+  }
+  .opt:hover { border-color: var(--guinda-rule); background: var(--off-white); }
+  .opt.sel { border-color: var(--guinda); background: var(--guinda-light); }
+  .opt.disabled { opacity: .55; cursor: not-allowed; }
+  .opt input { margin-top: .35rem; accent-color: var(--guinda); flex-shrink: 0; width: 1.05rem; height: 1.05rem; }
+  .opt-letter {
+    flex-shrink: 0; width: 1.7rem; height: 1.7rem; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--font-ui); font-weight: 700; font-size: .8rem;
+    background: var(--surface); color: var(--ink-secondary); border: 1px solid var(--border-strong);
+  }
+  .opt.sel .opt-letter { background: var(--guinda); color: #fff; border-color: var(--guinda); }
+  .opt-text { font-size: .98rem; line-height: 1.55; }
+
+  .q-actions { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; margin-top: 1.5rem; }
+  .q-actions .spacer { flex: 1; }
+
+  /* ---------- modal ---------- */
+  .modal-back {
+    position: fixed; inset: 0; z-index: 100; background: rgba(26,18,21,.6);
+    display: flex; align-items: center; justify-content: center; padding: 1rem;
+  }
+  .modal-back[hidden] { display: none; }
+  .modal { background: #fff; border-top: 5px solid var(--guinda); border-radius: var(--radius-lg); max-width: 480px; width: 100%; padding: 1.6rem 1.7rem; box-shadow: 0 12px 40px rgba(0,0,0,.3); }
+  .modal h3 { color: var(--guinda-dark); margin-bottom: .6rem; }
+  .modal .modal-actions { display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1.3rem; flex-wrap: wrap; }
+
+  /* ---------- resultados ---------- */
+  .result-card { background: #fff; border: 1px solid var(--border); border-top: 4px solid var(--guinda); border-radius: var(--radius-lg); padding: 1.8rem; box-shadow: var(--shadow-sm); }
+  .score-row { display: flex; gap: 2rem; align-items: center; flex-wrap: wrap; }
+  .ring { width: 150px; height: 150px; flex-shrink: 0; }
+  .score-info h2 { margin-bottom: .2rem; color: var(--guinda-dark); }
+  .verdict { font-family: var(--font-ui); font-size: .95rem; color: var(--ink-secondary); margin: 0; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin: 1.6rem 0; }
+  @media (max-width: 700px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat { background: var(--off-white); border: 1px solid var(--border); border-radius: var(--radius-md); padding: .8rem 1rem; }
+  .stat .k { font-family: var(--font-ui); font-size: .7rem; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-muted); display: block; }
+  .stat .v { font-family: var(--font-ui); font-size: 1.15rem; font-weight: 700; color: var(--ink); }
+  .stat.warn .v { color: #B3261E; }
+  table.det td.ok { color: #1D6B3A; font-weight: 600; }
+  table.det td.mal { color: #B3261E; font-weight: 600; }
+  table.det td.vacia { color: var(--ink-muted); font-weight: 600; }
+  .folio { font-family: var(--font-mono); font-size: .85rem; color: var(--ink-secondary); margin-top: 1.2rem; }
+  .result-actions { display: flex; gap: .75rem; margin-top: 1.4rem; flex-wrap: wrap; }
+
+  .hero-compact h1 { font-size: 2rem; }
+  .print-title { display: none; font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--guinda-dark); margin: 0 0 1rem; }
+
+  @media print {
+    @page { size: A4; margin: 12mm; }
+    body { background: #fff; }
+    .no-print, .exam-bar, .modal-back, .site-footer { display: none !important; }
+    #screen-result .page-wrapper { max-width: none; padding: 0; }
+    #screen-result .class-hero { display: none !important; }
+    .print-title { display: block !important; }
+    .result-card { box-shadow: none; page-break-inside: auto; padding: 1rem; }
+    .ring { width: 120px; height: 120px; }
+    .stats { margin: 1rem 0; }
+    body.protect .screen { display: none !important; }
+    body.protect::before { content: "Contenido no disponible para impresión."; display: block; padding: 2rem; font-family: sans-serif; }
+    #wm { display: block !important; }
+  }
+</style>
+</head>
+<body class="protect">
+
+<div id="wm" aria-hidden="true"></div>
+
+<noscript><p style="padding:2rem;font-family:sans-serif">Esta evaluación requiere JavaScript activado en el navegador.</p></noscript>
+
+<header class="site-header">
+  <div class="logo-wrap"><img src="imagen1.png" alt="Logotipo IEDEP"></div>
+  <div class="header-text">
+    <span class="inst-name">Instituto de Educación Digital del Estado de Puebla</span>
+    <span class="doc-title">Evaluación · Licenciatura en Sistemas Computacionales</span>
+  </div>
+</header>
+
+<!-- ============ PANTALLA 1: INICIO ============ -->
+<section id="screen-start" class="screen">
+  <div class="class-hero hero-compact">
+    <span class="class-label">Unidades 1 y 2 · Fundamentos y Modelado de Datos</span>
+    <h1>Evaluación de Bases de Datos I</h1>
+    <span class="class-subtitle">Reactivos basados en escenarios empresariales</span>
+    <div class="meta-row">
+      <div class="meta-item">Programa educativo<span>Lic. en Sistemas Computacionales</span></div>
+      <div class="meta-item">Asignatura<span>Bases de Datos I</span></div>
+      <div class="meta-item">Unidades evaluadas<span>1 y 2</span></div>
+      <div class="meta-item">Reactivos<span>5</span></div>
+      <div class="meta-item">Tiempo<span>20 minutos</span></div>
+      <div class="meta-item">Fecha<span id="fecha-hoy">—</span></div>
+    </div>
+  </div>
+
+  <div class="page-wrapper">
+    <div class="start-grid">
+      <div class="card start-card">
+        <img src="imagen2.png" alt="Mixtle">
+        <div>
+          <span class="card-title">Antes de comenzar</span>
+          <ul class="info-list">
+            <li>Son 5 reactivos de opción múltiple, planteados como situaciones reales de una empresa.</li>
+            <li>Cada reactivo vale 2 puntos; la calificación máxima es 10.</li>
+            <li>Algunos reactivos piden seleccionar más de una opción: lee el enunciado completo.</li>
+            <li>Puedes marcar un reactivo para revisarlo y cambiar tus respuestas antes de finalizar.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <form id="form-inicio" autocomplete="off" novalidate>
+          <label class="field-label" for="nombre">Nombre completo del alumno</label>
+          <input id="nombre" class="field-input" type="text" maxlength="80" placeholder="Nombre(s) y apellidos" autocomplete="off" spellcheck="false">
+          <div id="nombre-error" class="field-error" role="alert"></div>
+          <button type="submit" class="btn primary">Comenzar evaluación</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PANTALLA 2: EVALUACIÓN ============ -->
+<section id="screen-exam" class="screen" hidden>
+  <div class="exam-bar">
+    <img class="bar-logo" src="imagen1.png" alt="">
+    <span class="who">Alumno: <strong id="who"></strong></span>
+    <span class="progress" id="progress"></span>
+    <span class="timer" id="timer" role="timer">20:00</span>
+  </div>
+
+  <div class="exam-wrap">
+    <div class="qnav" id="qnav"></div>
+    <article class="q-card" id="qbox"></article>
+    <div class="q-actions">
+      <button type="button" class="btn" id="btn-prev">Anterior</button>
+      <button type="button" class="btn" id="btn-flag">Marcar para revisión</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn primary" id="btn-next">Siguiente</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PANTALLA 3: RESULTADOS ============ -->
+<section id="screen-result" class="screen" hidden>
+  <div class="class-hero hero-compact">
+    <span class="class-label">Comprobante de evaluación</span>
+    <h1>Resultado de la evaluación</h1>
+    <span class="class-subtitle">Bases de Datos I · Unidades 1 y 2</span>
+  </div>
+  <div class="page-wrapper">
+    <div class="print-title">Comprobante de evaluación · Bases de Datos I — Unidades 1 y 2</div>
+    <div class="result-card">
+      <div class="score-row">
+        <svg class="ring" viewBox="0 0 120 120" role="img" aria-label="Calificación obtenida">
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#EADCE2" stroke-width="10"/>
+          <circle id="ring-arc" cx="60" cy="60" r="52" fill="none" stroke="#490b58" stroke-width="10" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7" transform="rotate(-90 60 60)"/>
+          <text id="ring-text" x="60" y="68" text-anchor="middle" font-family="Cormorant Garamond, Georgia, serif" font-size="34" font-weight="700" fill="#490b58">0/10</text>
+        </svg>
+        <div class="score-info">
+          <span class="field-label" style="margin-bottom:.2rem">Alumno</span>
+          <h2 id="r-nombre"></h2>
+          <p class="verdict" id="r-verdict"></p>
+        </div>
+      </div>
+
+      <div class="stats" id="r-stats"></div>
+
+      <h3>Desglose por reactivo</h3>
+      <table class="det">
+        <thead><tr><th>Reactivo</th><th>Tema</th><th>Resultado</th></tr></thead>
+        <tbody id="r-det"></tbody>
+      </table>
+
+      <div class="folio" id="r-folio"></div>
+
+      <div class="result-actions no-print">
+        <button type="button" class="btn primary" id="btn-print">Descargar comprobante (PDF)</button>
+      </div>
+      <p class="no-print" style="margin-top:1rem;font-family:var(--font-ui);font-size:.82rem;color:var(--ink-muted)">Al abrir el cuadro de impresión elige "Guardar como PDF" y entrega el archivo a tu docente.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MODAL ============ -->
+<div class="modal-back" id="modal-back" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h3 id="modal-title"></h3>
+    <div id="modal-body"></div>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <span><strong>IEDEP</strong> · Bases de Datos I — Evaluación, Unidades 1 y 2</span>
+  <span>Mtro. José Armando Vera Rodríguez</span>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= CONFIGURACIÓN ================= */
+  var DURACION_MIN = 20;          // minutos disponibles
+  var PUNTOS_POR_REACTIVO = 2;    // 5 reactivos x 2 = 10
+  var KEY = 'iedep_bd1_eval_u1u2_v1';
+
+  /* ================= BANCO DE REACTIVOS ================= */
+  var BANK = [
+    {
+      tema: '1.2 Evolución de los sistemas de almacenamiento',
+      escenario: 'Una aseguradora con presencia en 12 estados administra sus pólizas en hojas de cálculo y archivos de texto que mantiene cada sucursal por separado. Auditoría detecta que un mismo cliente aparece con tres domicilios distintos según la sucursal que se consulte y que, cada vez que el área de TI cambia el orden de las columnas de un archivo, los programas de reportes de otras áreas dejan de funcionar. La dirección aprueba migrar a un sistema gestor de bases de datos (SGBD) relacional.',
+      pregunta: '¿Cuál es el resultado MÁS directo que se espera de esta migración respecto de los problemas descritos?',
+      multiple: false,
+      opciones: [
+        { t: 'Se reducen la redundancia y la inconsistencia de los datos, y los programas dejan de depender del formato físico en que se guardan los archivos.', ok: true },
+        { t: 'Se elimina la necesidad de definir un esquema, pues cada sucursal podrá guardar los campos que prefiera sin afectar a las demás.', ok: false },
+        { t: 'Se resuelve únicamente el problema de capacidad, ya que el SGBD aporta más espacio en disco pero conserva una copia independiente por sucursal.', ok: false },
+        { t: 'Se traslada a cada sucursal la responsabilidad de mantener la consistencia de sus datos, conservando su copia local como fuente principal.', ok: false }
+      ]
+    },
+    {
+      tema: '1.4 Arquitectura de un SGBD',
+      escenario: 'Un banco regional migra el almacenamiento de su base de datos a un nuevo arreglo de discos de estado sólido que utiliza un formato de almacenamiento distinto. Semanas después, el área de TI agrega el atributo "segmento_cliente" a la entidad CLIENTE en el esquema completo de la base de datos. Durante ambos cambios, la aplicación de ventanilla —que solo consulta el nombre y el saldo de los clientes— continúa funcionando sin ninguna modificación.',
+      pregunta: '¿Qué DOS afirmaciones describen correctamente lo ocurrido? (Selecciona DOS.)',
+      multiple: true, max: 2,
+      opciones: [
+        { t: 'La migración del almacenamiento solo modificó el nivel interno; gracias a la independencia física de los datos, el esquema conceptual y las aplicaciones no se vieron afectados.', ok: true },
+        { t: 'El nuevo atributo se agregó en el nivel conceptual; gracias a la independencia lógica de los datos, las vistas externas que no lo utilizan, como la de ventanilla, pueden seguir sin cambios.', ok: true },
+        { t: 'La migración del almacenamiento obligó a rediseñar el nivel conceptual, porque este describe el formato físico en el que se guardan los bytes en el disco.', ok: false },
+        { t: 'El nuevo atributo se agregó en el nivel externo, por lo que todas las aplicaciones tuvieron que actualizarse para seguir mostrando los datos de CLIENTE.', ok: false },
+        { t: 'La aplicación de ventanilla siguió funcionando porque accede directamente a los archivos físicos, sin pasar por ninguno de los tres niveles de abstracción.', ok: false }
+      ]
+    },
+    {
+      tema: '1.3 Modelos de datos',
+      escenario: 'Una red de clínicas necesita registrar médicos, pacientes y citas. Un médico atiende a muchos pacientes y un paciente puede ser atendido por varios médicos de distintas especialidades. Los analistas de la dirección requieren consultar la información de forma flexible —por especialidad, por periodo o por clínica— sin depender de rutas de acceso predefinidas por los programadores.',
+      pregunta: '¿Qué modelo de datos es el MÁS adecuado para este sistema?',
+      multiple: false,
+      opciones: [
+        { t: 'Jerárquico, porque organiza los datos como un árbol que refleja la estructura clínica → médico → paciente.', ok: false },
+        { t: 'En red, porque admite varios padres por registro, y las consultas se resuelven navegando los punteros entre registros según rutas definidas de antemano.', ok: false },
+        { t: 'Relacional, porque representa las relaciones de muchos a muchos mediante tablas vinculadas por claves y permite consultas declarativas flexibles con SQL.', ok: true },
+        { t: 'Orientado a objetos, porque es el único modelo capaz de representar relaciones de muchos a muchos entre entidades.', ok: false }
+      ]
+    },
+    {
+      tema: '2.2 Atributos, entidades y relaciones',
+      escenario: 'Una cadena de gimnasios desea digitalizar la inscripción a sus clases grupales. Un socio puede inscribirse a varias clases y cada clase admite a muchos socios. Por cada inscripción se debe registrar la fecha en que se realizó y si el pago fue confirmado. Además, de cada socio se guardan varios números telefónicos de contacto y su edad, que el sistema debe mostrar siempre actualizada a partir de su fecha de nacimiento.',
+      pregunta: '¿Cuál diseño conceptual (modelo entidad-relación) representa MEJOR estos requerimientos?',
+      multiple: false,
+      opciones: [
+        { t: 'Relación INSCRIBE de cardinalidad 1:N entre SOCIO y CLASE, con fecha_inscripcion y pago_confirmado como atributos de CLASE; telefono como atributo simple y edad como atributo derivado de fecha_nacimiento.', ok: false },
+        { t: 'Relación INSCRIBE de cardinalidad N:M entre SOCIO y CLASE, con fecha_inscripcion y pago_confirmado como atributos propios de la relación; telefono como atributo multivaluado de SOCIO y edad como atributo derivado de fecha_nacimiento.', ok: true },
+        { t: 'Relación INSCRIBE de cardinalidad N:M entre SOCIO y CLASE, con fecha_inscripcion como atributo de SOCIO y pago_confirmado como atributo de CLASE; telefono como atributo compuesto y edad como atributo simple.', ok: false },
+        { t: 'Relación INSCRIBE de cardinalidad N:M entre SOCIO y CLASE, con fecha_inscripcion y pago_confirmado como atributos propios de la relación; telefono como atributo simple que guarda todos los números separados por comas y edad como atributo simple capturado manualmente.', ok: false }
+      ]
+    },
+    {
+      tema: '2.4 Casos prácticos de modelado',
+      escenario: 'Una empresa de mensajería registra sucursales, repartidores, entregas y paquetes bajo estas reglas: cada repartidor está adscrito a una sola sucursal, pero una sucursal cuenta con muchos repartidores; un repartidor realiza muchas entregas a lo largo del día y cada entrega es realizada por un único repartidor; una entrega puede incluir varios paquetes y, cuando una entrega falla, el mismo paquete puede incluirse en una entrega posterior.',
+      pregunta: '¿Qué conjunto de cardinalidades representa correctamente estas reglas?',
+      multiple: false,
+      opciones: [
+        { t: 'SUCURSAL–REPARTIDOR: N:M;  REPARTIDOR–ENTREGA: 1:N;  ENTREGA–PAQUETE: 1:N.', ok: false },
+        { t: 'SUCURSAL–REPARTIDOR: 1:N;  REPARTIDOR–ENTREGA: N:M;  ENTREGA–PAQUETE: 1:N.', ok: false },
+        { t: 'SUCURSAL–REPARTIDOR: 1:1;  REPARTIDOR–ENTREGA: 1:N;  ENTREGA–PAQUETE: N:M.', ok: false },
+        { t: 'SUCURSAL–REPARTIDOR: 1:N;  REPARTIDOR–ENTREGA: 1:N;  ENTREGA–PAQUETE: N:M.', ok: true }
+      ]
+    }
+  ];
+
+  /* ================= UTILIDADES ================= */
+  var $ = function (id) { return document.getElementById(id); };
+  var mem = {};
+  function lsGet(k) { try { return window.localStorage.getItem(k); } catch (e) { return mem[k] || null; } }
+  function lsSet(k, v) { try { window.localStorage.setItem(k, v); } catch (e) { mem[k] = v; } }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function rnd(n) {
+    if (window.crypto && window.crypto.getRandomValues) {
+      var u = new Uint32Array(1); window.crypto.getRandomValues(u); return u[0] % n;
+    }
+    return Math.floor(Math.random() * n);
+  }
+  function shuffle(a) {
+    var r = a.slice();
+    for (var i = r.length - 1; i > 0; i--) { var j = rnd(i + 1); var t = r[i]; r[i] = r[j]; r[j] = t; }
+    return r;
+  }
+  function seq(n) { var a = []; for (var i = 0; i < n; i++) a.push(i); return a; }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function fmtMs(ms) { var s = Math.max(0, Math.round(ms / 1000)); return pad(Math.floor(s / 60)) + ':' + pad(s % 60); }
+  function hash(str) {
+    var h = 2166136261;
+    for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+    var s = (h >>> 0).toString(36).toUpperCase();
+    while (s.length < 7) s = '0' + s;
+    return s;
+  }
+  function xmlEsc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;'); }
+
+  /* ================= ESTADO ================= */
+  var S = null, away = false, timerId = null;
+  function save() { if (S) lsSet(KEY, JSON.stringify(S)); }
+  function protect() { return !(S && S.finished); }
+  function examActive() { return !!(S && !S.finished) && !$('screen-exam').hidden; }
+  function countBlocked() { if (S && !S.finished) { S.bloqueos = (S.bloqueos || 0) + 1; save(); } }
+
+  /* ================= MARCA DE AGUA ================= */
+  var wmText = '', wmOpacity = 0;
+  function setWatermark(text, opacity) {
+    wmText = text; wmOpacity = opacity; applyWm();
+  }
+  function applyWm() {
+    var w = $('wm');
+    if (!w) { w = el('div'); w.id = 'wm'; w.setAttribute('aria-hidden', 'true'); document.body.appendChild(w); }
+    if (!wmText) { w.style.backgroundImage = 'none'; return; }
+    var t = xmlEsc(wmText.toUpperCase());
+    var tw = Math.max(480, wmText.length * 18 + 140), th = 270;
+    var svg = "<svg xmlns='http://www.w3.org/2000/svg' width='" + tw + "' height='" + th + "'>" +
+      "<g transform='rotate(-28 " + (tw / 2) + " " + (th / 2) + ")'>" +
+      "<text x='" + (tw / 2) + "' y='" + (th / 2 + 8) + "' text-anchor='middle' font-family='Arial, Helvetica, sans-serif' font-size='26' font-weight='700' fill='rgb(73,11,88)' fill-opacity='" + wmOpacity + "'>" + t + "</text></g></svg>";
+    w.style.backgroundImage = 'url("data:image/svg+xml;utf8,' + encodeURIComponent(svg) + '")';
+    w.style.display = 'block'; w.style.visibility = 'visible'; w.style.opacity = '1';
+  }
+  setInterval(applyWm, 1500);
+
+  /* ================= MODAL ================= */
+  function openModal(title, bodyNodes, buttons) {
+    $('modal-title').textContent = title;
+    var body = $('modal-body'); body.textContent = '';
+    (Array.isArray(bodyNodes) ? bodyNodes : [bodyNodes]).forEach(function (n) {
+      body.appendChild(typeof n === 'string' ? el('p', null, n) : n);
+    });
+    var act = $('modal-actions'); act.textContent = '';
+    buttons.forEach(function (b) {
+      var btn = el('button', 'btn' + (b.primary ? ' primary' : ''), b.label); btn.type = 'button';
+      btn.addEventListener('click', function () { closeModal(); if (b.onClick) b.onClick(); });
+      act.appendChild(btn);
+    });
+    $('modal-back').hidden = false;
+    var first = act.querySelector('.primary') || act.querySelector('button');
+    if (first) first.focus();
+  }
+  function closeModal() { $('modal-back').hidden = true; }
+
+  /* ================= INICIO ================= */
+  function fechaHoy() {
+    try {
+      var s = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    } catch (e) { return new Date().toLocaleDateString(); }
+  }
+  function showStart() {
+    $('screen-start').hidden = false; $('screen-exam').hidden = true; $('screen-result').hidden = true;
+    $('fecha-hoy').textContent = fechaHoy();
+    setWatermark('', 0);
+  }
+  function begin(ev) {
+    ev.preventDefault();
+    var nombre = $('nombre').value.replace(/\s+/g, ' ').trim();
+    var err = $('nombre-error');
+    if (nombre.length < 6 || nombre.indexOf(' ') < 0) {
+      err.textContent = 'Escribe tu nombre completo (nombre y apellido).';
+      $('nombre').focus();
+      return;
+    }
+    err.textContent = '';
+    var now = Date.now();
+    var qOrder = shuffle(seq(BANK.length));
+    var oOrder = {};
+    BANK.forEach(function (q, i) { oOrder[i] = shuffle(seq(q.opciones.length)); });
+    S = {
+      nombre: nombre, order: { q: qOrder, o: oOrder }, ans: {}, flags: {}, cur: 0,
+      inicio: now, fin: now + DURACION_MIN * 60000,
+      intentos: 1, infracciones: 0, bloqueos: 0, finished: false
+    };
+    save();
+    showExam();
+  }
+
+  /* ================= EVALUACIÓN ================= */
+  function showExam() {
+    $('screen-start').hidden = true; $('screen-exam').hidden = false; $('screen-result').hidden = true;
+    $('who').textContent = S.nombre;
+    setWatermark(S.nombre, 0.07);
+    renderNav(); renderQuestion(); startTimer();
+    window.scrollTo(0, 0);
+  }
+  function renderNav() {
+    var nav = $('qnav'); nav.textContent = '';
+    S.order.q.forEach(function (qi, pos) {
+      var b = el('button', 'qn', String(pos + 1)); b.type = 'button';
+      if (pos === S.cur) b.classList.add('cur');
+      if ((S.ans[qi] || []).length) b.classList.add('done');
+      if (S.flags[qi]) b.classList.add('flag');
+      b.setAttribute('aria-label', 'Ir al reactivo ' + (pos + 1));
+      b.addEventListener('click', function () { S.cur = pos; save(); renderNav(); renderQuestion(); });
+      nav.appendChild(b);
+    });
+    nav.appendChild(el('span', 'legend', 'Respondido: tono rosado · Marcado para revisión: punto ámbar'));
+  }
+  function renderQuestion() {
+    var qi = S.order.q[S.cur], q = BANK[qi];
+    var box = $('qbox'); box.textContent = '';
+    var meta = el('div', 'q-meta');
+    meta.appendChild(el('span', 'q-num', 'Reactivo ' + (S.cur + 1) + ' de ' + BANK.length));
+    meta.appendChild(el('span', 'q-type' + (q.multiple ? '' : ' single'), q.multiple ? 'Selecciona ' + (q.max === 2 ? 'DOS' : q.max) + ' opciones' : 'Selecciona UNA opción'));
+    box.appendChild(meta);
+    box.appendChild(el('div', 'q-scenario', q.escenario));
+    box.appendChild(el('p', 'q-stem', q.pregunta));
+
+    var list = el('div', 'opts'); list.setAttribute('role', q.multiple ? 'group' : 'radiogroup');
+    var sel = S.ans[qi] || [];
+    S.order.o[qi].forEach(function (oi, k) {
+      var lab = el('label', 'opt');
+      var inp = document.createElement('input');
+      inp.type = q.multiple ? 'checkbox' : 'radio'; inp.name = 'q' + qi; inp.value = String(oi);
+      inp.checked = sel.indexOf(oi) > -1;
+      lab.appendChild(inp);
+      lab.appendChild(el('span', 'opt-letter', String.fromCharCode(65 + k)));
+      lab.appendChild(el('span', 'opt-text', q.opciones[oi].t));
+      inp.addEventListener('change', function () { onPick(qi, q, inp, list); });
+      list.appendChild(lab);
+    });
+    box.appendChild(list);
+    syncOptions(q, list);
+
+    $('progress').textContent = 'Reactivo ' + (S.cur + 1) + ' de ' + BANK.length;
+    $('btn-prev').disabled = S.cur === 0;
+    var last = S.cur === BANK.length - 1;
+    $('btn-next').textContent = last ? 'Finalizar evaluación' : 'Siguiente';
+    var fl = $('btn-flag');
+    fl.classList.toggle('flagged', !!S.flags[qi]);
+    fl.textContent = S.flags[qi] ? 'Quitar marca de revisión' : 'Marcar para revisión';
+  }
+  function syncOptions(q, list) {
+    var inputs = list.querySelectorAll('input');
+    var count = 0;
+    Array.prototype.forEach.call(inputs, function (i) { if (i.checked) count++; });
+    Array.prototype.forEach.call(inputs, function (i) {
+      var lab = i.parentNode;
+      lab.classList.toggle('sel', i.checked);
+      var dis = q.multiple && !i.checked && count >= q.max;
+      i.disabled = dis; lab.classList.toggle('disabled', dis);
+    });
+  }
+  function onPick(qi, q, inp, list) {
+    var v = Number(inp.value);
+    var sel = (S.ans[qi] || []).slice();
+    if (q.multiple) {
+      if (inp.checked) { if (sel.indexOf(v) < 0) sel.push(v); }
+      else sel = sel.filter(function (x) { return x !== v; });
+    } else { sel = [v]; }
+    S.ans[qi] = sel; save();
+    syncOptions(q, list); renderNav();
+  }
+  function go(delta) {
+    var n = S.cur + delta;
+    if (n < 0) return;
+    if (n >= BANK.length) { askFinish(); return; }
+    S.cur = n; save(); renderNav(); renderQuestion(); window.scrollTo(0, 0);
+  }
+  function toggleFlag() {
+    var qi = S.order.q[S.cur];
+    S.flags[qi] = !S.flags[qi]; save(); renderNav(); renderQuestion();
+  }
+  function askFinish() {
+    var sin = 0, marc = 0;
+    BANK.forEach(function (q, i) { if (!(S.ans[i] || []).length) sin++; if (S.flags[i]) marc++; });
+    var lines = [];
+    lines.push(el('p', null, 'Estás a punto de enviar tus respuestas. Una vez enviadas no podrás modificarlas.'));
+    var ul = el('ul');
+    ul.appendChild(el('li', null, 'Reactivos sin responder: ' + sin));
+    ul.appendChild(el('li', null, 'Reactivos marcados para revisión: ' + marc));
+    lines.push(ul);
+    openModal('¿Finalizar la evaluación?', lines, [
+      { label: 'Seguir revisando' },
+      { label: 'Enviar respuestas', primary: true, onClick: function () { finish(false); } }
+    ]);
+  }
+
+  /* ================= TEMPORIZADOR ================= */
+  function startTimer() {
+    clearInterval(timerId);
+    var t = $('timer');
+    function tick() {
+      var left = S.fin - Date.now();
+      t.textContent = fmtMs(left);
+      t.classList.toggle('low', left <= 120000);
+      if (left <= 0) { clearInterval(timerId); finish(true); }
+    }
+    tick(); timerId = setInterval(tick, 250);
+  }
+
+  /* ================= RESULTADO ================= */
+  function computeResult() {
+    var det = [], ok = 0;
+    S.order.q.forEach(function (qi, pos) {
+      var q = BANK[qi];
+      var claves = [];
+      q.opciones.forEach(function (o, i) { if (o.ok) claves.push(i); });
+      var resp = (S.ans[qi] || []).slice().sort();
+      var respondida = resp.length > 0;
+      var correcta = respondida && resp.length === claves.length && resp.every(function (v, i) { return v === claves[i]; });
+      if (correcta) ok++;
+      det.push({ pos: pos + 1, tema: q.tema, estado: correcta ? 'ok' : (respondida ? 'mal' : 'vacia') });
+    });
+    return { aciertos: ok, puntos: ok * PUNTOS_POR_REACTIVO, total: BANK.length * PUNTOS_POR_REACTIVO, det: det };
+  }
+  function finish(auto) {
+    if (!S || S.finished) return;
+    clearInterval(timerId);
+    away = false; document.body.classList.remove('away');
+    S.finished = true; S.finReal = Date.now();
+    var r = computeResult();
+    r.folio = 'BD1-' + hash(S.nombre + '|' + S.inicio + '|' + r.puntos);
+    r.auto = !!auto;
+    S.resultado = r; save();
+    closeModal();
+    showResult();
+    if (auto) {
+      openModal('Tiempo agotado', 'El tiempo de la evaluación terminó y tus respuestas se enviaron automáticamente.', [{ label: 'Ver resultado', primary: true }]);
+    }
+  }
+  function showResult() {
+    document.body.classList.remove('protect');
+    $('screen-start').hidden = true; $('screen-exam').hidden = true; $('screen-result').hidden = false;
+    var r = S.resultado;
+    setWatermark(S.nombre, 0.15);
+    $('r-nombre').textContent = S.nombre;
+    var pct = r.puntos / r.total;
+    $('ring-text').textContent = r.puntos + '/' + r.total;
+    $('ring-arc').setAttribute('stroke-dashoffset', String(326.7 * (1 - pct)));
+    $('r-verdict').textContent = r.aciertos + ' de ' + BANK.length + ' reactivos correctos · ' +
+      (pct >= 0.8 ? 'Desempeño sobresaliente' : pct >= 0.6 ? 'Desempeño satisfactorio' : 'Requiere reforzamiento');
+
+    var usado = Math.min(S.finReal, S.fin) - S.inicio;
+    var stats = [
+      ['Puntuación', r.puntos + ' / ' + r.total, false],
+      ['Tiempo empleado', fmtMs(usado), false],
+      ['Intentos registrados', String(S.intentos), S.intentos > 1],
+      ['Infracciones (salidas de la ventana)', String(S.infracciones), S.infracciones > 0],
+      ['Acciones no permitidas bloqueadas', String(S.bloqueos || 0), (S.bloqueos || 0) > 0],
+      ['Fecha y hora de envío', new Date(S.finReal).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }), false]
+    ];
+    var box = $('r-stats'); box.textContent = '';
+    stats.forEach(function (s) {
+      var d = el('div', 'stat' + (s[2] ? ' warn' : ''));
+      d.appendChild(el('span', 'k', s[0])); d.appendChild(el('span', 'v', s[1]));
+      box.appendChild(d);
+    });
+    var tb = $('r-det'); tb.textContent = '';
+    r.det.forEach(function (d) {
+      var tr = el('tr');
+      tr.appendChild(el('td', null, 'Reactivo ' + d.pos));
+      tr.appendChild(el('td', null, d.tema));
+      tr.appendChild(el('td', d.estado, d.estado === 'ok' ? 'Correcto' : d.estado === 'mal' ? 'Incorrecto — repasa este tema' : 'Sin responder — repasa este tema'));
+      tb.appendChild(tr);
+    });
+    $('r-folio').textContent = 'Folio del comprobante: ' + r.folio + (r.auto ? ' · Enviado automáticamente al agotarse el tiempo' : '');
+    window.scrollTo(0, 0);
+  }
+
+  /* ================= VIGILANCIA DE LA VENTANA ================= */
+  var unloading = false;
+  window.addEventListener('beforeunload', function () { unloading = true; });
+  window.addEventListener('pagehide', function () { unloading = true; });
+  function leave() {
+    if (!examActive() || away || unloading) return;
+    away = true;
+    S.infracciones = (S.infracciones || 0) + 1; save();
+    document.body.classList.add('away');
+  }
+  function back() {
+    if (!away) return;
+    away = false;
+    document.body.classList.remove('away');
+    if (!examActive()) return;
+    var p = el('p', null, 'Se detectó que saliste de la ventana de la evaluación. Infracciones registradas hasta ahora: ' + S.infracciones + '.');
+    openModal('Salida registrada', p, [{ label: 'Continuar', primary: true }]);
+  }
+  document.addEventListener('visibilitychange', function () { if (document.hidden) leave(); else back(); });
+  window.addEventListener('blur', leave);
+  window.addEventListener('focus', back);
+
+  /* ================= PROTECCIÓN DEL CONTENIDO ================= */
+  function block(e) {
+    if (!protect()) return;
+    e.preventDefault();
+    if (e.clipboardData) { try { e.clipboardData.setData('text/plain', ''); } catch (x) {} }
+    countBlocked();
+  }
+  ['copy', 'cut', 'paste', 'contextmenu', 'dragstart', 'drop'].forEach(function (ev) {
+    document.addEventListener(ev, block, true);
+  });
+  document.addEventListener('selectstart', function (e) {
+    if (!protect()) return;
+    var t = e.target && e.target.nodeType === 1 ? e.target : (e.target && e.target.parentElement);
+    if (t && t.tagName === 'INPUT') return;
+    e.preventDefault();
+  }, true);
+  document.addEventListener('keydown', function (e) {
+    if (!protect()) return;
+    var k = (e.key || '').toLowerCase(), mod = e.ctrlKey || e.metaKey, bad = false;
+    if (mod && k.length === 1 && 'cxvaspu'.indexOf(k) > -1) bad = true;
+    if (mod && e.shiftKey && k.length === 1 && 'ijc'.indexOf(k) > -1) bad = true;
+    if (e.key === 'F12') bad = true;
+    if (bad) { e.preventDefault(); e.stopPropagation(); countBlocked(); }
+  }, true);
+  document.addEventListener('keyup', function (e) {
+    if (!protect()) return;
+    if (e.key === 'PrintScreen') {
+      try { navigator.clipboard.writeText(''); } catch (x) {}
+      countBlocked();
+    }
+  }, true);
+  window.addEventListener('beforeprint', function () { if (protect()) countBlocked(); });
+
+  /* ================= ARRANQUE ================= */
+  $('form-inicio').addEventListener('submit', begin);
+  $('btn-prev').addEventListener('click', function () { go(-1); });
+  $('btn-next').addEventListener('click', function () { go(1); });
+  $('btn-flag').addEventListener('click', toggleFlag);
+  $('btn-print').addEventListener('click', function () { window.print(); });
+
+  var raw = lsGet(KEY);
+  if (raw) { try { S = JSON.parse(raw); } catch (e) { S = null; } }
+  if (S && !S.finished) {
+    // la página se recargó o se reabrió con una evaluación en curso: cuenta como un intento más
+    S.intentos = (S.intentos || 1) + 1; save();
+    showExam();   // si el tiempo ya se agotó, el temporizador cierra la evaluación de inmediato
+  } else if (S && S.finished) {
+    showResult();
+  } else {
+    showStart();
+  }
+})();
+</script>
+</body>
+</html>
