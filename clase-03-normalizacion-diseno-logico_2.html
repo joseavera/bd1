@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clase 3 — Normalización y Diseño Lógico</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* ---------- Componentes comunes de la serie ---------- */
+  .mixtle-card { display: flex; gap: 1.5rem; align-items: center; }
+  .mixtle-card img { width: 110px; flex-shrink: 0; }
+  @media (max-width: 600px) { .mixtle-card { flex-direction: column; text-align: center; } }
+
+  .mixtle-tip { display: flex; gap: .9rem; align-items: flex-start; }
+  .mixtle-tip img { width: 46px; flex-shrink: 0; margin-top: .1rem; }
+
+  .diagram-wrap {
+    background: var(--off-white); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.5rem 1rem 1rem;
+  }
+
+  .compare-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: .9rem; margin: 1.25rem 0; }
+  @media (max-width: 900px) { .compare-grid-4 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .compare-grid-4 { grid-template-columns: 1fr; } }
+  .model-card {
+    background: var(--off-white); border: 1px solid var(--border); border-top: 4px solid var(--guinda);
+    border-radius: var(--radius-md); padding: 1rem 1.1rem;
+  }
+  .model-card h4 { color: var(--guinda-dark); margin-bottom: .4rem; }
+  .model-card p { font-size: .93rem; }
+  .model-card .model-analogy { font-size: .83rem; color: var(--ink-secondary); font-style: italic; margin-top: .5rem; }
+
+  .code-label {
+    font-family: var(--font-ui); font-size: .72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--guinda-mid); margin-bottom: .4rem; display: block;
+  }
+  .code-block {
+    background: var(--ink); color: #f3ecef; border-radius: var(--radius-md); padding: 1rem 1.2rem;
+    font-family: var(--font-mono); font-size: .8rem; line-height: 1.65; overflow-x: auto;
+    margin: 0 0 1.1rem; white-space: pre;
+  }
+  .code-block .cm { color: #cf9fb4; font-style: italic; }
+
+  .tool-banner {
+    display: flex; align-items: center; gap: .8rem; background: var(--guinda-light);
+    border: 1px solid var(--border-strong); border-radius: var(--radius-md); padding: .8rem 1.1rem;
+    margin: 1rem 0 1.3rem; font-family: var(--font-ui); font-size: .88rem;
+  }
+  .tool-banner .tool-icon {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--guinda); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-weight: 700; font-size: 1rem; flex-shrink: 0;
+  }
+  .tool-banner a { color: var(--guinda-dark); font-weight: 600; }
+
+  .table-scroll { overflow-x: auto; margin: 1rem 0; }
+  .table-scroll table { margin: 0; }
+  table.compact th, table.compact td { padding: .42rem .65rem; font-size: .82rem; }
+  table.compact th { font-size: .72rem; letter-spacing: .02em; }
+  td.redundant { background: #FBEFE8; color: #8A4B1D; }
+  td.multi     { background: #FDECEA; color: #8C1D18; }
+  td.moved     { background: var(--guinda-light); color: var(--guinda-dark); font-weight: 600; }
+
+  /* ---------- Agenda visual ---------- */
+  .agenda { display: grid; grid-template-columns: repeat(6, 1fr); gap: .6rem; margin: 1.2rem 0 .4rem; }
+  .ag-step {
+    background: var(--off-white); border: 1px solid var(--border); border-top: 4px solid var(--guinda);
+    border-radius: var(--radius-md); padding: .8rem .6rem; text-align: center;
+    font-family: var(--font-ui); font-size: .78rem; line-height: 1.35; color: var(--ink-secondary);
+  }
+  .ag-step b {
+    display: flex; width: 1.9rem; height: 1.9rem; border-radius: 50%; background: var(--guinda); color: #fff;
+    align-items: center; justify-content: center; margin: 0 auto .45rem; font-size: .85rem;
+  }
+  .ag-step strong { display: block; color: var(--ink); margin-bottom: .15rem; font-size: .82rem; }
+  .ag-step.hot { border-top-color: var(--guinda-rule); background: var(--guinda-light); }
+  @media (max-width: 900px) { .agenda { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 520px) { .agenda { grid-template-columns: repeat(2, 1fr); } }
+
+  /* ---------- Cardinalidad: trío visual ---------- */
+  .card-trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1.3rem 0; }
+  @media (max-width: 800px) { .card-trio { grid-template-columns: 1fr; } }
+  .ct {
+    background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1rem 1rem .9rem; box-shadow: var(--shadow-sm);
+  }
+  .ct .ct-name { font-family: var(--font-ui); font-weight: 700; font-size: 1.15rem; color: var(--guinda); }
+  .ct .ct-sub { font-family: var(--font-ui); font-size: .78rem; color: var(--ink-secondary); margin-bottom: .3rem; }
+  .ct svg { width: 100%; height: auto; display: block; }
+  .ct .ct-max {
+    display: flex; justify-content: space-between; gap: .4rem; font-family: var(--font-ui); font-size: .74rem;
+    background: var(--guinda-light); border-radius: var(--radius-md); padding: .4rem .6rem; margin: .5rem 0;
+  }
+  .ct p { font-size: .88rem; margin: 0; color: var(--ink-secondary); }
+
+  .two-way {
+    display: grid; grid-template-columns: 1fr auto 1fr; gap: .8rem; align-items: center; margin: 1.2rem 0;
+  }
+  @media (max-width: 700px) { .two-way { grid-template-columns: 1fr; } .two-way .tw-mid { display: none; } }
+  .tw-box {
+    background: var(--off-white); border: 1px solid var(--border-strong); border-radius: var(--radius-md);
+    padding: .9rem 1rem; font-size: .94rem;
+  }
+  .tw-box b { font-family: var(--font-ui); color: var(--guinda); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; display: block; margin-bottom: .25rem; }
+  .tw-mid { font-family: var(--font-ui); font-weight: 700; color: var(--guinda-rule); font-size: 1.4rem; }
+
+  /* ---------- Laboratorios interactivos ---------- */
+  .lab {
+    border: 2px solid var(--guinda); border-radius: var(--radius-lg); background: #fff;
+    margin: 1.6rem 0; overflow: hidden; box-shadow: var(--shadow-md);
+  }
+  .lab-head {
+    background: var(--guinda); color: #fff; padding: .7rem 1.2rem; display: flex; gap: .8rem;
+    align-items: center; flex-wrap: wrap; font-family: var(--font-ui);
+  }
+  .lab-head .tag {
+    font-size: .66rem; letter-spacing: .12em; text-transform: uppercase;
+    background: rgba(255,255,255,.2); padding: .18rem .65rem; border-radius: 999px;
+  }
+  .lab-head h3 { margin: 0; color: #fff; font-family: var(--font-ui); font-size: 1rem; font-weight: 600; }
+  .lab-body { padding: 1.2rem 1.3rem 1.3rem; }
+  .lab-intro { font-size: .95rem; margin-bottom: .9rem; }
+
+  .btn {
+    font-family: var(--font-ui); font-size: .82rem; font-weight: 600; cursor: pointer;
+    border: 1.5px solid var(--guinda); background: var(--guinda); color: #fff;
+    padding: .5rem 1rem; border-radius: var(--radius-md); transition: background .15s, color .15s;
+  }
+  .btn:hover { background: var(--guinda-dark); }
+  .btn.ghost { background: #fff; color: var(--guinda); }
+  .btn.ghost:hover { background: var(--guinda-light); }
+  .btn:focus-visible, .tabbtn:focus-visible, .opt:focus-visible, .pg-node:focus-visible { outline: 3px solid var(--guinda-rule); outline-offset: 2px; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  .tabrow { display: flex; flex-wrap: wrap; gap: .45rem; margin-bottom: 1rem; }
+  .tabbtn {
+    font-family: var(--font-ui); font-size: .8rem; font-weight: 600; cursor: pointer;
+    background: var(--off-white); color: var(--ink-secondary); border: 1.5px solid var(--border-strong);
+    padding: .42rem .9rem; border-radius: 999px;
+  }
+  .tabbtn[aria-selected="true"], .tabbtn.on { background: var(--guinda); color: #fff; border-color: var(--guinda); }
+
+  /* Parque de conexiones */
+  .pg-rule {
+    background: var(--guinda-light); border-left: 3px solid var(--guinda); padding: .7rem 1rem;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0; font-size: .95rem; margin-bottom: .6rem;
+  }
+  .pg-reto { font-family: var(--font-ui); font-size: .82rem; color: var(--ink-secondary); margin-bottom: .6rem; }
+  .pg-stage { background: var(--off-white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: .4rem; }
+  .pg-stage svg { width: 100%; height: auto; display: block; }
+  .pg-node { cursor: pointer; }
+  .pg-node rect { fill: #fff; stroke: var(--border-strong); stroke-width: 1.5; transition: fill .15s, stroke .15s; }
+  .pg-node:hover rect { fill: var(--guinda-light); }
+  .pg-node.sel rect { fill: var(--guinda-light); stroke: var(--guinda); stroke-width: 3; }
+  .pg-node.bad rect { fill: #FDECEA; stroke: #B3261E; stroke-width: 2.5; }
+  .pg-node text { font-family: var(--font-ui); font-size: 14px; fill: var(--ink); pointer-events: none; }
+  .pg-badge circle { fill: var(--guinda); }
+  .pg-badge.bad circle { fill: #B3261E; }
+  .pg-badge text { font-family: var(--font-ui); font-size: 12px; font-weight: 700; fill: #fff; text-anchor: middle; pointer-events: none; }
+  .pg-link { stroke: var(--guinda-rule); stroke-width: 2.6; fill: none; }
+  .pg-link.bad { stroke: #B3261E; stroke-dasharray: 6 4; }
+  .pg-hit { stroke: transparent; stroke-width: 14; fill: none; cursor: pointer; }
+  @media (max-width: 640px) { .pg-node text { font-size: 20px; } .pg-badge text { font-size: 16px; } .pg-colname { font-size: 17px; } }
+  .pg-colname { font-family: var(--font-ui); font-size: 12px; font-weight: 700; letter-spacing: .1em; fill: var(--guinda-mid); text-anchor: middle; }
+
+  .pg-panel { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .7rem; margin-top: .9rem; }
+  @media (max-width: 700px) { .pg-panel { grid-template-columns: 1fr; } }
+  .stat {
+    background: var(--off-white); border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: .7rem .9rem; font-family: var(--font-ui); font-size: .8rem; color: var(--ink-secondary);
+  }
+  .stat b { display: block; font-size: 1.6rem; color: var(--guinda); line-height: 1.15; }
+  .stat.big b { font-size: 1.9rem; }
+  .pg-msg { margin-top: .8rem; padding: .75rem 1rem; border-radius: var(--radius-md); font-size: .93rem; min-height: 2.6rem; }
+  .pg-msg.info { background: var(--off-white); border: 1px solid var(--border); color: var(--ink-secondary); }
+  .pg-msg.warn { background: #FDECEA; border: 1px solid #E8B4AF; color: #8C1D18; }
+  .pg-msg.ok   { background: #EAF5EC; border: 1px solid #A9D3B0; color: #1F5B2B; }
+  .pg-msg ul { margin: .3rem 0 0; padding-left: 1.2rem; }
+  .btn-row { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .9rem; }
+
+  /* Quiz */
+  .qz-top { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-ui); font-size: .8rem; color: var(--ink-secondary); margin-bottom: .5rem; }
+  .qz-bar { height: 8px; background: var(--border); border-radius: 999px; overflow: hidden; margin-bottom: 1rem; }
+  .qz-bar i { display: block; height: 100%; background: var(--guinda); width: 0; transition: width .3s; }
+  .qz-pair { display: flex; align-items: center; gap: .6rem; margin-bottom: .6rem; flex-wrap: wrap; }
+  .qz-ent { font-family: var(--font-ui); font-weight: 700; font-size: .9rem; background: var(--guinda); color: #fff; padding: .3rem .8rem; border-radius: var(--radius-md); }
+  .qz-ent.b { background: var(--guinda-mid); }
+  .qz-dash { color: var(--guinda-rule); font-weight: 700; }
+  .qz-case { font-size: 1rem; margin-bottom: 1rem; }
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+  @media (max-width: 640px) { .opts { grid-template-columns: 1fr; } }
+  .opt {
+    text-align: left; cursor: pointer; font-family: var(--font-ui); background: #fff;
+    border: 1.5px solid var(--border-strong); border-radius: var(--radius-md); padding: .65rem .85rem;
+    font-size: .85rem; color: var(--ink); transition: background .15s, border-color .15s;
+  }
+  .opt strong { display: block; color: var(--guinda); font-size: 1rem; }
+  .opt small { color: var(--ink-secondary); font-size: .76rem; }
+  .opt:hover:not(:disabled) { background: var(--guinda-light); border-color: var(--guinda); }
+  .opt.right { background: #EAF5EC; border-color: #4C9A5B; }
+  .opt.wrong { background: #FDECEA; border-color: #B3261E; }
+  .opt:disabled { cursor: default; }
+  .fb { margin-top: .9rem; padding: .85rem 1rem; border-radius: var(--radius-md); font-size: .92rem; }
+  .fb.ok { background: #EAF5EC; border: 1px solid #A9D3B0; color: #1F5B2B; }
+  .fb.no { background: #FDECEA; border: 1px solid #E8B4AF; color: #8C1D18; }
+  .fb p { margin: .2rem 0; font-size: .9rem; }
+  .fb b { font-family: var(--font-ui); }
+  .qz-end { text-align: center; padding: 1rem .5rem; }
+  .qz-end .score { font-family: var(--font-display); font-size: 3rem; color: var(--guinda); line-height: 1.1; }
+
+  /* Tablas en miniatura (laboratorio de mapeo) */
+  .mt-wrap { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; margin: .9rem 0; }
+  .mt { border: 1.5px solid var(--border-strong); border-radius: var(--radius-md); overflow: hidden; background: #fff; font-family: var(--font-ui); font-size: .78rem; min-width: 150px; }
+  .mt-h { background: var(--guinda); color: #fff; padding: .35rem .7rem; font-weight: 700; letter-spacing: .05em; font-size: .76rem; }
+  .mt.new .mt-h { background: var(--guinda-rule); }
+  .mt table { margin: 0; font-size: .76rem; }
+  .mt th { background: var(--surface); color: var(--ink); padding: .3rem .55rem; text-transform: none; letter-spacing: 0; font-size: .74rem; border-bottom: 1px solid var(--border); text-align: left; }
+  .mt td { padding: .28rem .55rem; border-bottom: 1px solid var(--border); font-size: .76rem; font-family: var(--font-ui); }
+  .mt tr:last-child td { border-bottom: 0; }
+  .mt .kb { display: inline-block; font-size: .6rem; font-weight: 700; padding: 0 .3rem; border-radius: 3px; margin-left: .25rem; vertical-align: middle; }
+  .kb.pk { background: var(--guinda); color: #fff; }
+  .kb.fk { background: #E0A64B; color: #3A2500; }
+  .kb.uq { background: #6B7FD7; color: #fff; }
+  .mt .hl { background: #FFF1CF; }
+  .mt-arrow { align-self: center; font-family: var(--font-ui); font-size: 1.5rem; font-weight: 700; color: var(--guinda-rule); }
+  .reveal { animation: fadein .45s ease both; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .reveal { animation: none; } .qz-bar i { transition: none; } }
+
+  .er-line {
+    display: flex; align-items: center; justify-content: center; gap: .6rem; margin: .7rem 0 .2rem; flex-wrap: wrap;
+    font-family: var(--font-ui);
+  }
+  .er-ent { border: 2px solid var(--guinda); border-radius: 4px; padding: .35rem .9rem; font-weight: 700; font-size: .85rem; color: var(--guinda); background: #fff; }
+  .er-rel { display: flex; align-items: center; gap: .3rem; color: var(--ink-secondary); font-size: .8rem; }
+  .er-rel i { display: block; width: 46px; height: 2px; background: var(--guinda-rule); }
+  .er-rel b { color: var(--guinda); font-size: .95rem; }
+
+  /* Normalizador */
+  .stage { margin-top: .4rem; }
+  .stage-meta { display: flex; flex-wrap: wrap; gap: .5rem; margin: .6rem 0; font-family: var(--font-ui); font-size: .76rem; }
+  .chip { padding: .22rem .7rem; border-radius: 999px; font-weight: 600; }
+  .chip.good { background: #EAF5EC; color: #1F5B2B; border: 1px solid #A9D3B0; }
+  .chip.todo { background: #FDECEA; color: #8C1D18; border: 1px solid #E8B4AF; }
+  .chip.neutral { background: var(--guinda-light); color: var(--guinda-dark); border: 1px solid #D8A8BA; }
+  .meter { display: flex; align-items: center; gap: .7rem; font-family: var(--font-ui); font-size: .78rem; color: var(--ink-secondary); margin: .4rem 0 .8rem; }
+  .meter .bar { flex: 1; height: 10px; background: var(--border); border-radius: 999px; overflow: hidden; max-width: 320px; }
+  .meter .bar i { display: block; height: 100%; background: #C0392B; }
+  .meter.low .bar i { background: #D98E04; }
+  .meter.zero .bar i { background: #3E9B52; }
+
+  /* Simulador de anomalia */
+  .an-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 1rem; }
+  @media (max-width: 860px) { .an-grid { grid-template-columns: minmax(0,1fr); } }
+  .an-panel { border: 1px solid var(--border-strong); border-radius: var(--radius-md); padding: .9rem; background: var(--off-white); min-width: 0; }
+  .an-panel .mt { max-width: 100%; overflow-x: auto; }
+  .an-panel table.compact td { font-family: var(--font-ui); }
+  .an-panel table.compact th, .an-panel table.compact td { padding: .35rem .45rem; font-size: .76rem; }
+  .an-panel h4 { font-size: .9rem; color: var(--guinda-dark); margin-bottom: .5rem; }
+  .an-panel td.changed { background: #E6F2E8; color: #1F5B2B; font-weight: 600; }
+  .an-panel td.stale { background: #FDECEA; color: #8C1D18; font-weight: 600; }
+  .an-note { font-family: var(--font-ui); font-size: .8rem; margin-top: .6rem; min-height: 1.4rem; }
+
+  /* Mapeo ER -> tablas (resumen) */
+  .rule-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .9rem; margin: 1.2rem 0; }
+  @media (max-width: 900px) { .rule-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px) { .rule-grid { grid-template-columns: 1fr; } }
+  .rule-card { background: #fff; border: 1px solid var(--border); border-top: 4px solid var(--guinda-rule); border-radius: var(--radius-md); padding: .9rem 1rem; box-shadow: var(--shadow-sm); }
+  .rule-card .rc-card { font-family: var(--font-ui); font-weight: 700; font-size: 1.2rem; color: var(--guinda); }
+  .rule-card .rc-do { font-family: var(--font-ui); font-size: .82rem; font-weight: 600; color: var(--ink); margin: .2rem 0 .4rem; }
+  .rule-card p { font-size: .86rem; color: var(--ink-secondary); margin: 0; }
+  .rule-card svg { width: 100%; height: auto; display: block; margin: .3rem 0; }
+
+  .pin-note {
+    border: 1.5px dashed var(--guinda); background: #FFFDF7; border-radius: var(--radius-lg);
+    padding: 1rem 1.2rem; margin: 1.5rem 0;
+  }
+  .pin-note .pin-tag {
+    display: inline-block; font-family: var(--font-ui); font-size: .68rem; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; background: var(--guinda); color: #fff; padding: .15rem .65rem; border-radius: 999px; margin-bottom: .5rem;
+  }
+  .yn { font-family: var(--font-ui); font-weight: 700; font-size: .78rem; padding: .1rem .55rem; border-radius: 999px; }
+  .yn.y { background: #EAF5EC; color: #1F5B2B; }
+  .yn.n { background: #FDECEA; color: #8C1D18; }
+  code { font-family: var(--font-mono); font-size: .86em; background: var(--surface); padding: .05rem .3rem; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo-wrap"><img src="imagen1.png" alt="Logotipo IEDEP"></div>
+  <div class="header-text">
+    <span class="inst-name">Instituto de Educación Digital del Estado de Puebla</span>
+    <span class="doc-title">Material de clase · Licenciatura en Sistemas Computacionales</span>
+  </div>
+</header>
+
+<section class="class-hero">
+  <span class="class-label">Unidad 3 · Normalización y Diseño Lógico</span>
+  <h1>De la cardinalidad a las tablas: así se ordena una base de datos</h1>
+  <span class="class-subtitle">Tercera sesión de la asignatura Bases de Datos I</span>
+  <div class="meta-row">
+    <div class="meta-item">Programa educativo<span>Lic. en Sistemas Computacionales</span></div>
+    <div class="meta-item">Asignatura<span>Bases de Datos I</span></div>
+    <div class="meta-item">Unidad<span>3 · Normalización y Diseño Lógico</span></div>
+    <div class="meta-item">Tema<span>Refuerzo de cardinalidad · 3.1 a 3.3</span></div>
+    <div class="meta-item">Fecha<span>Sábado 10 de octubre de 2026</span></div>
+  </div>
+</section>
+
+<main class="page-wrapper">
+
+  <!-- COMPETENCIAS -->
+  <section class="section">
+    <h2 class="section-title">Competencias a desarrollar</h2>
+    <div class="competency-card">
+      <span class="comp-num">01</span>
+      <span class="comp-text"><strong>Determinar</strong> la cardinalidad (1:1, 1:N o N:M) de una relación leyendo la regla de negocio en ambos sentidos, como base para decidir cómo se convertirá en tablas.</span>
+    </div>
+    <div class="competency-card">
+      <span class="comp-num">02</span>
+      <span class="comp-text"><strong>Aplicar</strong> las reglas de la Primera, Segunda y Tercera Forma Normal (y la Forma Normal de Boyce-Codd) para eliminar la redundancia de una tabla no normalizada.</span>
+    </div>
+    <div class="competency-card">
+      <span class="comp-num">03</span>
+      <span class="comp-text"><strong>Identificar</strong> dependencias funcionales, parciales y transitivas, reconociendo la redundancia y las anomalías que provocan en un esquema mal diseñado.</span>
+    </div>
+    <div class="competency-card">
+      <span class="comp-num">04</span>
+      <span class="comp-text"><strong>Transformar</strong> un diagrama entidad-relación en un esquema relacional lógico, definiendo correctamente claves primarias, claves foráneas y tablas intermedias.</span>
+    </div>
+  </section>
+
+  <!-- INTRO MIXTLE -->
+  <section class="section">
+    <div class="card mixtle-card">
+      <img src="imagen2.png" alt="Mixtle, guía de la clase">
+      <div>
+        <span class="card-title">Hola de nuevo, soy Mixtle</span>
+        <p>En la sesión pasada vimos que la <strong>cardinalidad</strong> es una de las ideas que más cuesta fijar, y es normal: hoy la vamos a practicar con juegos antes de seguir. No es un rodeo, es el punto de partida: la cardinalidad de una relación decide <em>cómo</em> se convierte en tablas. Si la lees bien, el diseño de la base de datos casi se escribe solo.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:1.4rem;">Mapa de la clase</h3>
+    <div class="agenda">
+      <div class="ag-step hot"><b>1</b><strong>Cardinalidad</strong>Dos laboratorios interactivos</div>
+      <div class="ag-step"><b>2</b><strong>Formas normales</strong>De la tabla universal a 3FN</div>
+      <div class="ag-step"><b>3</b><strong>Dependencias</strong>Qué determina a qué</div>
+      <div class="ag-step hot"><b>4</b><strong>ER a tablas</strong>Laboratorio de llaves foráneas</div>
+      <div class="ag-step"><b>5</b><strong>Práctica</strong>DB Browser y DB Fiddle</div>
+      <div class="ag-step"><b>6</b><strong>Actividad</strong>Reporte y esquema lógico</div>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ PARTE 1: CARDINALIDAD ============ -->
+  <section class="section" id="cardinalidad">
+    <span class="section-label">Parte 1 · Refuerzo</span>
+    <h2 class="section-title">Cardinalidad: cuántos con cuántos</h2>
+    <p>La cardinalidad indica <strong>cuántas instancias de una entidad pueden relacionarse con cuántas instancias de otra</strong>. Hay solo tres casos y se distinguen con una sola pregunta, hecha dos veces.</p>
+
+    <div class="concept-box">
+      <span class="concept-title">La pregunta de los dos sentidos</span>
+      <p>Para cualquier relación entre A y B pregunta: <strong>(1)</strong> ¿con cuántos B puede relacionarse, <em>como máximo</em>, un solo A? y <strong>(2)</strong> ¿con cuántos A puede relacionarse, <em>como máximo</em>, un solo B? Si la respuesta es "uno" o "muchos" en cada sentido, ya tienes la cardinalidad. Fíjate en la palabra <em>máximo</em>: no importa si hoy un registro tiene solo uno; importa lo que la regla de negocio permite.</p>
+    </div>
+
+    <div class="two-way">
+      <div class="tw-box"><b>Sentido 1 · de A hacia B</b>"Un docente, ¿a cuántos grupos puede dar clase?" &rarr; <strong>muchos</strong></div>
+      <div class="tw-mid" aria-hidden="true">&harr;</div>
+      <div class="tw-box"><b>Sentido 2 · de B hacia A</b>"Un grupo, ¿cuántos docentes titulares tiene?" &rarr; <strong>uno</strong><br>Resultado: <strong>1:N</strong></div>
+    </div>
+
+    <div class="card-trio">
+      <div class="ct">
+        <div class="ct-name">1:1</div>
+        <div class="ct-sub">uno a uno</div>
+        <svg viewBox="0 0 200 142" role="img" aria-label="Tres puntos de A conectados cada uno con un único punto de B">
+          <g stroke="var(--guinda-rule)" stroke-width="2.2">
+            <line x1="30" y1="30" x2="170" y2="30"/><line x1="30" y1="65" x2="170" y2="65"/><line x1="30" y1="100" x2="170" y2="100"/>
+          </g>
+          <g fill="var(--guinda)"><circle cx="30" cy="30" r="9"/><circle cx="30" cy="65" r="9"/><circle cx="30" cy="100" r="9"/></g>
+          <g fill="var(--guinda-mid)"><circle cx="170" cy="30" r="9"/><circle cx="170" cy="65" r="9"/><circle cx="170" cy="100" r="9"/></g>
+          <text x="30" y="136" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="var(--guinda)">A</text>
+          <text x="170" y="136" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="var(--guinda-mid)">B</text>
+        </svg>
+        <div class="ct-max"><span>A &rarr; B: máx. <b>1</b></span><span>B &rarr; A: máx. <b>1</b></span></div>
+        <p><strong>Analogía:</strong> persona y huella digital. Cada persona tiene una huella y cada huella es de una sola persona.</p>
+      </div>
+      <div class="ct">
+        <div class="ct-name">1:N</div>
+        <div class="ct-sub">uno a muchos</div>
+        <svg viewBox="0 0 200 142" role="img" aria-label="Dos puntos de A, cada uno conectado con dos puntos de B, y cada punto de B con un solo A">
+          <g stroke="var(--guinda-rule)" stroke-width="2.2">
+            <line x1="30" y1="38" x2="170" y2="20"/><line x1="30" y1="38" x2="170" y2="50"/>
+            <line x1="30" y1="92" x2="170" y2="80"/><line x1="30" y1="92" x2="170" y2="110"/>
+          </g>
+          <g fill="var(--guinda)"><circle cx="30" cy="38" r="9"/><circle cx="30" cy="92" r="9"/></g>
+          <g fill="var(--guinda-mid)"><circle cx="170" cy="20" r="9"/><circle cx="170" cy="50" r="9"/><circle cx="170" cy="80" r="9"/><circle cx="170" cy="110" r="9"/></g>
+          <text x="30" y="136" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="var(--guinda)">A</text>
+          <text x="170" y="136" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="var(--guinda-mid)">B</text>
+        </svg>
+        <div class="ct-max"><span>A &rarr; B: máx. <b>muchos</b></span><span>B &rarr; A: máx. <b>1</b></span></div>
+        <p><strong>Analogía:</strong> una madre y sus hijos. Una madre puede tener varios hijos, pero cada hijo tiene una sola madre biológica.</p>
+      </div>
+      <div class="ct">
+        <div class="ct-name">N:M</div>
+        <div class="ct-sub">muchos a muchos</div>
+        <svg viewBox="0 0 200 142" role="img" aria-label="Tres puntos de A y tres de B con conexiones cruzadas, cada punto con dos conexiones">
+          <g stroke="var(--guinda-rule)" stroke-width="2.2">
+            <line x1="30" y1="30" x2="170" y2="30"/><line x1="30" y1="30" x2="170" y2="65"/>
+            <line x1="30" y1="65" x2="170" y2="65"/><line x1="30" y1="65" x2="170" y2="100"/>
+            <line x1="30" y1="100" x2="170" y2="30"/><line x1="30" y1="100" x2="170" y2="100"/>
+          </g>
+          <g fill="var(--guinda)"><circle cx="30" cy="30" r="9"/><circle cx="30" cy="65" r="9"/><circle cx="30" cy="100" r="9"/></g>
+          <g fill="var(--guinda-mid)"><circle cx="170" cy="30" r="9"/><circle cx="170" cy="65" r="9"/><circle cx="170" cy="100" r="9"/></g>
+          <text x="30" y="136" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="var(--guinda)">A</text>
+          <text x="170" y="136" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="var(--guinda-mid)">B</text>
+        </svg>
+        <div class="ct-max"><span>A &rarr; B: máx. <b>muchos</b></span><span>B &rarr; A: máx. <b>muchos</b></span></div>
+        <p><strong>Analogía:</strong> estudiantes y talleres optativos. Cada estudiante elige varios talleres y cada taller tiene muchos estudiantes.</p>
+      </div>
+    </div>
+
+    <div class="mixtle-tip">
+      <img src="imagen2.png" alt="Mixtle">
+      <div class="callout" style="margin:0; flex:1;">
+        <p><strong>Truco de Mixtle:</strong> el "1" y el "N" no son decoración, indican dónde quedará la llave foránea. Cuando una relación es 1:N, la llave foránea siempre se guarda del lado del <strong>muchos</strong> (el hijo guarda el dato de su madre, no al revés). Más adelante lo comprobarás en el Laboratorio 3.</p>
+      </div>
+    </div>
+
+    <!-- LAB 1 -->
+    <div class="lab" id="lab-conecta">
+      <div class="lab-head"><span class="tag">Laboratorio 1</span><h3>Conecta y descubre la cardinalidad</h3></div>
+      <div class="lab-body">
+        <p class="lab-intro">Elige un caso, lee la regla y dibuja conexiones: haz clic en un elemento de la izquierda y después en uno de la derecha para unirlos (otro clic sobre la pareja, o sobre la línea, la deshace). El panel te dirá qué cardinalidad estás dibujando y si rompes la regla.</p>
+        <div class="tabrow" role="tablist" aria-label="Casos del laboratorio 1" id="pg-tabs"></div>
+        <div class="pg-rule" id="pg-rule"></div>
+        <div class="pg-reto" id="pg-reto"></div>
+        <div class="pg-stage"><svg id="pg-svg" viewBox="0 0 640 280" role="group" aria-label="Zona de conexiones"></svg></div>
+        <div class="pg-panel">
+          <div class="stat"><span id="pg-l-lbl">Máximo por cada elemento izquierdo</span><b id="pg-l">0</b></div>
+          <div class="stat"><span id="pg-r-lbl">Máximo por cada elemento derecho</span><b id="pg-r">0</b></div>
+          <div class="stat big"><span>Cardinalidad que estás dibujando</span><b id="pg-card">—</b></div>
+        </div>
+        <div class="pg-msg info" id="pg-msg" aria-live="polite"></div>
+        <div class="btn-row">
+          <button class="btn ghost" id="pg-clear" type="button">Limpiar</button>
+          <button class="btn ghost" id="pg-ex" type="button">Ver una solución posible</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LAB 2 -->
+    <div class="lab" id="lab-quiz">
+      <div class="lab-head"><span class="tag">Laboratorio 2</span><h3>¿Qué cardinalidad es? Ocho casos de empresa</h3></div>
+      <div class="lab-body">
+        <div id="qz-root"></div>
+      </div>
+    </div>
+
+    <!-- SEÑALADO: BASE DE DATOS -->
+    <div class="pin-note">
+      <span class="pin-tag">Conecta con tu base de datos</span>
+      <p style="margin-bottom:.6rem;">La base <strong>biblioteca_escolar.db</strong> de la semana pasada ya contiene las tres cardinalidades. Ábrela en DB Browser for SQLite y localiza cada una:</p>
+      <div class="table-scroll">
+        <table class="compact">
+          <thead><tr><th>Relación</th><th>Cardinalidad</th><th>Cómo está implementada</th><th>Archivo de consultas</th></tr></thead>
+          <tbody>
+            <tr><td>CARRERA &ndash; USUARIO</td><td><strong>1:N</strong></td><td>Llave foránea <code>usuario.id_carrera</code> (lado N)</td><td>3.1, 3.2 y 10.1</td></tr>
+            <tr><td>USUARIO &ndash; TELÉFONO</td><td><strong>1:N</strong> (atributo multivaluado)</td><td>Tabla aparte <code>usuario_telefono</code> con FK a usuario</td><td>3.3 y 3.4</td></tr>
+            <tr><td>PRÉSTAMO &ndash; MULTA</td><td><strong>1:N</strong></td><td>Llave foránea <code>multa.id_prestamo</code></td><td>3.5, 10.6 y 10.7</td></tr>
+            <tr><td>LIBRO &ndash; AUTOR</td><td><strong>N:M</strong></td><td>Tabla intermedia <code>libro_autor</code> (dos FK)</td><td>4.1 a 4.3 y 10.2</td></tr>
+            <tr><td>USUARIO &ndash; LIBRO</td><td><strong>N:M</strong> con atributos propios</td><td>Tabla intermedia <code>prestamo</code> con fechas</td><td>4.4 a 4.9 y 10.3</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin:0;">Las consultas del <strong>Bloque 10</strong> (nuevo, en el archivo <code>consultas_biblioteca_escolar.sql</code>) aplican la pregunta de los dos sentidos con SQL: miden el máximo en cada sentido y revelan en qué tablas viven las llaves foráneas. Los bloques 3 y 4 muestran la cardinalidad en acción con JOIN.</p>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ 3.1 ============ -->
+  <section class="section">
+    <span class="section-label">Parte 2 · Unidad 3</span>
+    <h2 class="section-title">3.1 Formas normales</h2>
+    <p>El diagrama entidad-relación es un buen plano, pero todavía no es una base de datos. Antes de construirla hay que depurar las tablas para que cada dato viva en un solo lugar. Una <strong>forma normal</strong> es una regla de diseño que una tabla debe cumplir para considerarse "bien estructurada"; se aplican de manera progresiva: para estar en 2FN, la tabla debe cumplir antes la 1FN, y así sucesivamente.</p>
+
+    <div class="concept-box">
+      <span class="concept-title">¿Por qué normalizar?</span>
+      <p>Normalizar evita tres tipos de anomalías: de <strong>actualización</strong> (hay que corregir el mismo dato en varios lugares), de <strong>inserción</strong> (no puedes registrar un dato nuevo sin inventar otro que aún no existe) y de <strong>borrado</strong> (al eliminar una fila pierdes información que no debería depender de ella).</p>
+    </div>
+
+    <div class="mixtle-tip">
+      <img src="imagen2.png" alt="Mixtle">
+      <div class="callout" style="margin:0; flex:1;">
+        <p><strong>Analogía de Mixtle:</strong> normalizar es ordenar un clóset que lleva años sin acomodarse. Primero sacas lo que estaba amontonado en un solo cajón (1FN), luego agrupas cada prenda con las de su tipo (2FN), y después separas lo que en realidad no pertenece a ese cajón, aunque haya estado ahí por años (3FN).</p>
+      </div>
+    </div>
+
+    <div class="compare-grid-4">
+      <div class="model-card">
+        <h4>1FN</h4>
+        <p>Cada celda guarda un solo valor atómico y no existen grupos repetidos.</p>
+        <p class="model-analogy">Elimina: celdas con varios valores.</p>
+      </div>
+      <div class="model-card">
+        <h4>2FN</h4>
+        <p>Cumple 1FN y todo atributo que no es clave depende de la <em>clave completa</em>, no de una parte de ella.</p>
+        <p class="model-analogy">Elimina: dependencias parciales.</p>
+      </div>
+      <div class="model-card">
+        <h4>3FN</h4>
+        <p>Cumple 2FN y ningún atributo que no es clave depende de otro atributo que tampoco es clave.</p>
+        <p class="model-analogy">Elimina: dependencias transitivas.</p>
+      </div>
+      <div class="model-card">
+        <h4>BCNF</h4>
+        <p>Versión más estricta de 3FN: todo determinante de una dependencia funcional debe ser clave candidata.</p>
+        <p class="model-analogy">Cubre: casos que 3FN deja pasar.</p>
+      </div>
+    </div>
+
+    <!-- NORMALIZADOR -->
+    <div class="lab" id="lab-norm">
+      <div class="lab-head"><span class="tag">Explorador</span><h3>Normalizador paso a paso</h3></div>
+      <div class="lab-body">
+        <p class="lab-intro">Un registro de inscripciones capturado en una sola hoja. Avanza por las pestañas y observa qué se separa en cada forma normal y cómo baja la cantidad de datos repetidos. Las celdas en color marcan el problema o el cambio de cada paso.</p>
+        <div class="tabrow" role="tablist" aria-label="Formas normales" id="nm-tabs">
+          <button class="tabbtn" role="tab" aria-selected="true" data-st="0" type="button">Hoja original</button>
+          <button class="tabbtn" role="tab" aria-selected="false" data-st="1" type="button">1FN</button>
+          <button class="tabbtn" role="tab" aria-selected="false" data-st="2" type="button">2FN</button>
+          <button class="tabbtn" role="tab" aria-selected="false" data-st="3" type="button">3FN</button>
+        </div>
+
+        <!-- Etapa 0 -->
+        <div class="stage" id="st0">
+          <div class="stage-meta"><span class="chip todo">Problema: celdas con varios valores</span><span class="chip neutral">Una sola tabla, sin claves</span></div>
+          <div class="table-scroll">
+            <table class="compact">
+              <thead><tr><th>matricula</th><th>alumno</th><th>clave_curso</th><th>nombre_curso</th><th>profesor</th><th>correo_profesor</th><th>calificacion</th></tr></thead>
+              <tbody>
+                <tr><td>A001</td><td>Ana López</td><td class="multi">BD1, PROG2</td><td class="multi">Bases de Datos I, Programación II</td><td class="multi">Mtro. Salas, Mtra. Ruiz</td><td class="multi">salas@ejemplo.edu.mx, ruiz@ejemplo.edu.mx</td><td class="multi">9.2, 8.5</td></tr>
+                <tr><td>A002</td><td>Luis Pérez</td><td class="multi">BD1, BD2</td><td class="multi">Bases de Datos I, Bases de Datos II</td><td class="multi">Mtro. Salas, Mtro. Salas</td><td class="multi">salas@ejemplo.edu.mx, salas@ejemplo.edu.mx</td><td class="multi">7.8, 8.0</td></tr>
+                <tr><td>A003</td><td>Sofía Cruz</td><td class="multi">BD1, PROG2</td><td class="multi">Bases de Datos I, Programación II</td><td class="multi">Mtro. Salas, Mtra. Ruiz</td><td class="multi">salas@ejemplo.edu.mx, ruiz@ejemplo.edu.mx</td><td class="multi">9.5, 8.9</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="meter"><span>Celdas con varios valores: <strong>15</strong></span><span class="bar"><i style="width:100%"></i></span></div>
+          <p class="text-sm">No se puede buscar "todos los alumnos de BD1" con una condición simple, porque la clave del curso está mezclada dentro de la celda.</p>
+        </div>
+
+        <!-- Etapa 1 -->
+        <div class="stage" id="st1" hidden>
+          <div class="stage-meta"><span class="chip good">Resuelve: valores múltiples (1FN)</span><span class="chip todo">Pendiente: datos repetidos y dependencias parciales</span><span class="chip neutral">Clave: (matricula, clave_curso)</span></div>
+          <div class="table-scroll">
+            <table class="compact">
+              <thead><tr><th>matricula</th><th>alumno</th><th>clave_curso</th><th>nombre_curso</th><th>profesor</th><th>correo_profesor</th><th>calificacion</th></tr></thead>
+              <tbody>
+                <tr><td>A001</td><td class="redundant">Ana López</td><td>BD1</td><td class="redundant">Bases de Datos I</td><td class="redundant">Mtro. Salas</td><td class="redundant">salas@ejemplo.edu.mx</td><td>9.2</td></tr>
+                <tr><td>A001</td><td class="redundant">Ana López</td><td>PROG2</td><td class="redundant">Programación II</td><td class="redundant">Mtra. Ruiz</td><td class="redundant">ruiz@ejemplo.edu.mx</td><td>8.5</td></tr>
+                <tr><td>A002</td><td class="redundant">Luis Pérez</td><td>BD1</td><td class="redundant">Bases de Datos I</td><td class="redundant">Mtro. Salas</td><td class="redundant">salas@ejemplo.edu.mx</td><td>7.8</td></tr>
+                <tr><td>A002</td><td class="redundant">Luis Pérez</td><td>BD2</td><td>Bases de Datos II</td><td class="redundant">Mtro. Salas</td><td class="redundant">salas@ejemplo.edu.mx</td><td>8.0</td></tr>
+                <tr><td>A003</td><td class="redundant">Sofía Cruz</td><td>BD1</td><td class="redundant">Bases de Datos I</td><td class="redundant">Mtro. Salas</td><td class="redundant">salas@ejemplo.edu.mx</td><td>9.5</td></tr>
+                <tr><td>A003</td><td class="redundant">Sofía Cruz</td><td>PROG2</td><td class="redundant">Programación II</td><td class="redundant">Mtra. Ruiz</td><td class="redundant">ruiz@ejemplo.edu.mx</td><td>8.9</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="meter"><span>Datos repetidos innecesariamente: <strong>14</strong></span><span class="bar"><i style="width:100%"></i></span></div>
+          <p class="text-sm">Cada celda tiene ahora un valor, pero el nombre de la alumna se escribe dos veces y el correo del Mtro. Salas cuatro. El nombre del alumno depende solo de <code>matricula</code> (una parte de la clave): es una <strong>dependencia parcial</strong>.</p>
+        </div>
+
+        <!-- Etapa 2 -->
+        <div class="stage" id="st2" hidden>
+          <div class="stage-meta"><span class="chip good">Resuelve: dependencias parciales (2FN)</span><span class="chip todo">Pendiente: correo depende del profesor, no del curso</span></div>
+          <div class="mt-wrap">
+            <div class="mt"><div class="mt-h">ALUMNO</div><table><thead><tr><th>matricula<span class="kb pk">PK</span></th><th>nombre</th></tr></thead><tbody><tr><td>A001</td><td class="moved">Ana López</td></tr><tr><td>A002</td><td class="moved">Luis Pérez</td></tr><tr><td>A003</td><td class="moved">Sofía Cruz</td></tr></tbody></table></div>
+            <div class="mt"><div class="mt-h">CURSO</div><table><thead><tr><th>clave_curso<span class="kb pk">PK</span></th><th>nombre_curso</th><th>profesor</th><th>correo_profesor</th></tr></thead><tbody>
+              <tr><td>BD1</td><td>Bases de Datos I</td><td class="redundant">Mtro. Salas</td><td class="redundant">salas@ejemplo.edu.mx</td></tr>
+              <tr><td>PROG2</td><td>Programación II</td><td>Mtra. Ruiz</td><td>ruiz@ejemplo.edu.mx</td></tr>
+              <tr><td>BD2</td><td>Bases de Datos II</td><td class="redundant">Mtro. Salas</td><td class="redundant">salas@ejemplo.edu.mx</td></tr></tbody></table></div>
+            <div class="mt"><div class="mt-h">INSCRIPCION</div><table><thead><tr><th>matricula<span class="kb pk">PK</span><span class="kb fk">FK</span></th><th>clave_curso<span class="kb pk">PK</span><span class="kb fk">FK</span></th><th>calificacion</th></tr></thead><tbody>
+              <tr><td>A001</td><td>BD1</td><td>9.2</td></tr><tr><td>A001</td><td>PROG2</td><td>8.5</td></tr><tr><td>A002</td><td>BD1</td><td>7.8</td></tr><tr><td>A002</td><td>BD2</td><td>8.0</td></tr><tr><td>A003</td><td>BD1</td><td>9.5</td></tr><tr><td>A003</td><td>PROG2</td><td>8.9</td></tr></tbody></table></div>
+          </div>
+          <div class="meter low"><span>Datos repetidos innecesariamente: <strong>2</strong></span><span class="bar"><i style="width:14%"></i></span></div>
+          <p class="text-sm">Cada dato depende ya de la clave completa de su tabla. Queda una redundancia: si el Mtro. Salas da dos cursos, su correo se escribe dos veces. <code>correo_profesor</code> depende del <code>profesor</code>, que a su vez depende del curso: una <strong>dependencia transitiva</strong>.</p>
+        </div>
+
+        <!-- Etapa 3 -->
+        <div class="stage" id="st3" hidden>
+          <div class="stage-meta"><span class="chip good">Resuelve: dependencias transitivas (3FN)</span><span class="chip good">Cada dato vive en un solo lugar</span></div>
+          <div class="mt-wrap">
+            <div class="mt"><div class="mt-h">ALUMNO</div><table><thead><tr><th>matricula<span class="kb pk">PK</span></th><th>nombre</th></tr></thead><tbody><tr><td>A001</td><td>Ana López</td></tr><tr><td>A002</td><td>Luis Pérez</td></tr><tr><td>A003</td><td>Sofía Cruz</td></tr></tbody></table></div>
+            <div class="mt new"><div class="mt-h">PROFESOR</div><table><thead><tr><th>id_profesor<span class="kb pk">PK</span></th><th>nombre</th><th>correo</th></tr></thead><tbody><tr><td>1</td><td class="moved">Mtro. Salas</td><td class="moved">salas@ejemplo.edu.mx</td></tr><tr><td>2</td><td class="moved">Mtra. Ruiz</td><td class="moved">ruiz@ejemplo.edu.mx</td></tr></tbody></table></div>
+            <div class="mt"><div class="mt-h">CURSO</div><table><thead><tr><th>clave_curso<span class="kb pk">PK</span></th><th>nombre_curso</th><th>id_profesor<span class="kb fk">FK</span></th></tr></thead><tbody><tr><td>BD1</td><td>Bases de Datos I</td><td class="hl">1</td></tr><tr><td>PROG2</td><td>Programación II</td><td class="hl">2</td></tr><tr><td>BD2</td><td>Bases de Datos II</td><td class="hl">1</td></tr></tbody></table></div>
+            <div class="mt"><div class="mt-h">INSCRIPCION</div><table><thead><tr><th>matricula<span class="kb pk">PK</span><span class="kb fk">FK</span></th><th>clave_curso<span class="kb pk">PK</span><span class="kb fk">FK</span></th><th>calificacion</th></tr></thead><tbody>
+              <tr><td>A001</td><td>BD1</td><td>9.2</td></tr><tr><td>A001</td><td>PROG2</td><td>8.5</td></tr><tr><td>A002</td><td>BD1</td><td>7.8</td></tr><tr><td>A002</td><td>BD2</td><td>8.0</td></tr><tr><td>A003</td><td>BD1</td><td>9.5</td></tr><tr><td>A003</td><td>PROG2</td><td>8.9</td></tr></tbody></table></div>
+          </div>
+          <div class="meter zero"><span>Datos repetidos innecesariamente: <strong>0</strong></span><span class="bar"><i style="width:3%"></i></span></div>
+          <p class="text-sm">El correo del Mtro. Salas aparece una sola vez. Las relaciones se conservan con llaves foráneas: <strong>PROFESOR 1:N CURSO</strong>, <strong>ALUMNO &ndash; CURSO N:M</strong> (resuelta con la tabla intermedia INSCRIPCION). La cardinalidad de la Parte 1 vuelve a aparecer: normalizar y mapear relaciones son la misma conversación.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIMULADOR DE ANOMALIA -->
+    <div class="lab" id="lab-anom">
+      <div class="lab-head"><span class="tag">Simulador</span><h3>Anomalía de actualización: el correo que cambió</h3></div>
+      <div class="lab-body">
+        <p class="lab-intro">El Mtro. Salas cambió su correo. Compara qué ocurre al corregirlo en la hoja sin normalizar y en la tabla normalizada.</p>
+        <div class="an-grid">
+          <div class="an-panel">
+            <h4>Sin normalizar (una sola hoja)</h4>
+            <div class="table-scroll"><table class="compact" id="an-a">
+              <thead><tr><th>alumno</th><th>curso</th><th>profesor</th><th>correo</th></tr></thead><tbody></tbody></table></div>
+            <div class="btn-row"><button class="btn" id="an-a-btn" type="button">Corregir el correo (como en la hoja de cálculo)</button></div>
+            <div class="an-note" id="an-a-note" aria-live="polite"></div>
+          </div>
+          <div class="an-panel">
+            <h4>Normalizada (3FN)</h4>
+            <div class="mt" style="margin-bottom:.6rem;"><div class="mt-h">PROFESOR</div><table id="an-b-prof"><thead><tr><th>id_profesor</th><th>nombre</th><th>correo</th></tr></thead><tbody></tbody></table></div>
+            <div class="table-scroll"><table class="compact" id="an-b">
+              <thead><tr><th>alumno</th><th>curso</th><th>profesor</th><th>correo</th></tr></thead><tbody></tbody></table></div>
+            <div class="btn-row"><button class="btn" id="an-b-btn" type="button">Corregir el correo (una sola fila)</button></div>
+            <div class="an-note" id="an-b-note" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="btn-row"><button class="btn ghost" id="an-reset" type="button">Reiniciar simulación</button></div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ 3.2 ============ -->
+  <section class="section">
+    <h2 class="section-title">3.2 Redundancia y dependencia funcional</h2>
+    <p>Detrás de cada forma normal hay una idea precisa: la <strong>dependencia funcional</strong>. Se dice que un atributo <strong>Y</strong> depende funcionalmente de <strong>X</strong> (se escribe <strong>X &rarr; Y</strong>) si, para cada valor de X, existe un único valor posible de Y. Es la misma lógica de la cardinalidad: "cada X determina a un solo Y" equivale a decir que, de Y hacia X, la relación es de <em>muchos a uno</em>.</p>
+
+    <figure>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 640 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagrama de dependencias funcionales del caso de inscripciones">
+          <rect x="10" y="55" width="130" height="40" rx="6" fill="var(--surface)" stroke="var(--border-strong)"/>
+          <text x="75" y="80" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="var(--ink)">matricula</text>
+          <line x1="140" y1="75" x2="186" y2="75" stroke="var(--guinda-rule)" stroke-width="2.5"/>
+          <polygon points="190,75 180,69 180,81" fill="var(--guinda-rule)"/>
+          <rect x="190" y="55" width="130" height="40" rx="6" fill="var(--guinda-light)" stroke="#D8A8BA"/>
+          <text x="255" y="80" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="var(--guinda-dark)">nombre_alumno</text>
+          <text x="165" y="40" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--ink-secondary)">dependencia total (correcta)</text>
+
+          <rect x="440" y="10" width="170" height="38" rx="6" fill="var(--surface)" stroke="var(--border-strong)"/>
+          <text x="525" y="34" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="var(--ink)">clave_curso</text>
+          <line x1="525" y1="48" x2="525" y2="66" stroke="#E0A0B3" stroke-width="2" stroke-dasharray="4 3"/>
+          <polygon points="525,70 519,60 531,60" fill="#E0A0B3"/>
+          <rect x="440" y="70" width="170" height="38" rx="6" fill="var(--surface)" stroke="var(--border-strong)"/>
+          <text x="525" y="94" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="var(--ink)">profesor</text>
+          <line x1="525" y1="108" x2="525" y2="126" stroke="#E0A0B3" stroke-width="2" stroke-dasharray="4 3"/>
+          <polygon points="525,130 519,120 531,120" fill="#E0A0B3"/>
+          <rect x="440" y="130" width="170" height="36" rx="6" fill="#FBEFE8" stroke="#E7B98D"/>
+          <text x="525" y="153" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#8A4B1D">correo_profesor</text>
+          <text x="430" y="95" text-anchor="end" font-family="Inter, sans-serif" font-size="11" fill="var(--ink-secondary)">transitiva</text>
+          <text x="430" y="109" text-anchor="end" font-family="Inter, sans-serif" font-size="11" fill="var(--ink-secondary)">(a corregir)</text>
+        </svg>
+      </div>
+      <figcaption>Una dependencia correcta (izquierda) frente a una dependencia transitiva que genera redundancia (derecha): clave_curso &rarr; profesor &rarr; correo_profesor.</figcaption>
+    </figure>
+
+    <div class="mixtle-tip">
+      <img src="imagen2.png" alt="Mixtle">
+      <div class="callout" style="margin:0; flex:1;">
+        <p><strong>Analogía de Mixtle:</strong> una dependencia funcional es una llave de casillero: si conoces el número (X), sabes exactamente qué hay adentro (Y); nunca hay dos contenidos distintos para el mismo número. Cuando el contenido en realidad depende de otro casillero (el correo depende del profesor, no del curso), tienes una dependencia transitiva, y ahí se esconde la redundancia.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:1.4rem;">Pon a prueba la regla con la tabla de inscripciones</h3>
+    <p>Para saber si <strong>X &rarr; Y</strong>, busca un contraejemplo: dos filas con el mismo X y distinto Y. Si existe, la dependencia no se cumple.</p>
+    <div class="table-scroll">
+      <table class="compact">
+        <thead><tr><th>¿Se cumple?</th><th>Resultado</th><th>Por qué</th></tr></thead>
+        <tbody>
+          <tr><td><code>matricula &rarr; alumno</code></td><td><span class="yn y">Sí</span></td><td>Cada matrícula identifica a un solo alumno.</td></tr>
+          <tr><td><code>clave_curso &rarr; nombre_curso</code></td><td><span class="yn y">Sí</span></td><td>BD1 siempre es "Bases de Datos I".</td></tr>
+          <tr><td><code>alumno &rarr; matricula</code></td><td><span class="yn n">No</span></td><td>Dos alumnos distintos podrían llamarse igual: el nombre no determina la matrícula.</td></tr>
+          <tr><td><code>profesor &rarr; clave_curso</code></td><td><span class="yn n">No</span></td><td>El Mtro. Salas da BD1 y BD2: un profesor determina varios cursos (1:N).</td></tr>
+          <tr><td><code>(matricula, clave_curso) &rarr; calificacion</code></td><td><span class="yn y">Sí</span></td><td>La calificación depende de la pareja alumno-curso completa.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ 3.3 ============ -->
+  <section class="section">
+    <h2 class="section-title">3.3 Transformación de modelos ER a tablas</h2>
+    <p>Con las reglas de normalización claras, ya podemos traducir cualquier diagrama entidad-relación a un esquema relacional. Las reglas son fijas: <strong>la cardinalidad decide dónde va la llave foránea</strong>.</p>
+
+    <div class="rule-grid">
+      <div class="rule-card">
+        <div class="rc-card">1:1</div>
+        <svg viewBox="0 0 160 46" aria-hidden="true"><rect x="4" y="8" width="58" height="30" rx="4" fill="#fff" stroke="var(--guinda)" stroke-width="1.8"/><rect x="98" y="8" width="58" height="30" rx="4" fill="#fff" stroke="var(--guinda)" stroke-width="1.8"/><text x="33" y="27" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="var(--guinda)">A</text><text x="127" y="27" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="var(--guinda)">B</text><line x1="62" y1="23" x2="98" y2="23" stroke="var(--guinda-rule)" stroke-width="2"/><text x="70" y="19" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="var(--guinda)">1</text><text x="87" y="19" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="var(--guinda)">1</text></svg>
+        <div class="rc-do">FK + UNIQUE en el lado dependiente</div>
+        <p>La tabla que no puede existir sin la otra guarda la llave, y se marca como única.</p>
+      </div>
+      <div class="rule-card">
+        <div class="rc-card">1:N</div>
+        <svg viewBox="0 0 160 46" aria-hidden="true"><rect x="4" y="8" width="58" height="30" rx="4" fill="#fff" stroke="var(--guinda)" stroke-width="1.8"/><rect x="98" y="8" width="58" height="30" rx="4" fill="#fff" stroke="var(--guinda)" stroke-width="1.8"/><text x="33" y="27" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="var(--guinda)">A</text><text x="127" y="27" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="var(--guinda)">B</text><line x1="62" y1="23" x2="98" y2="23" stroke="var(--guinda-rule)" stroke-width="2"/><text x="70" y="19" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="var(--guinda)">1</text><text x="87" y="19" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="var(--guinda)">N</text></svg>
+        <div class="rc-do">FK en la tabla del lado N</div>
+        <p>El "hijo" guarda la clave del "padre". Nunca al revés: una celda no puede guardar muchos valores.</p>
+      </div>
+      <div class="rule-card">
+        <div class="rc-card">N:M</div>
+        <svg viewBox="0 0 160 46" aria-hidden="true"><rect x="4" y="8" width="58" height="30" rx="4" fill="#fff" stroke="var(--guinda)" stroke-width="1.8"/><rect x="98" y="8" width="58" height="30" rx="4" fill="#fff" stroke="var(--guinda)" stroke-width="1.8"/><text x="33" y="27" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="var(--guinda)">A</text><text x="127" y="27" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="var(--guinda)">B</text><line x1="62" y1="23" x2="98" y2="23" stroke="var(--guinda-rule)" stroke-width="2"/><text x="70" y="19" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="var(--guinda)">N</text><text x="87" y="19" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="var(--guinda)">M</text></svg>
+        <div class="rc-do">Tabla intermedia con dos FK</div>
+        <p>Una tabla nueva con las claves de ambas entidades y los atributos propios de la relación.</p>
+      </div>
+      <div class="rule-card">
+        <div class="rc-card">Multivaluado</div>
+        <svg viewBox="0 0 160 46" aria-hidden="true"><ellipse cx="33" cy="23" rx="29" ry="15" fill="#fff" stroke="var(--guinda)" stroke-width="1.8"/><ellipse cx="33" cy="23" rx="24" ry="11" fill="none" stroke="var(--guinda)" stroke-width="1"/><rect x="98" y="8" width="58" height="30" rx="4" fill="#fff" stroke="var(--guinda)" stroke-width="1.8"/><line x1="62" y1="23" x2="98" y2="23" stroke="var(--guinda-rule)" stroke-width="2"/></svg>
+        <div class="rc-do">Tabla aparte con FK</div>
+        <p>Es una relación 1:N disfrazada: un usuario con varios teléfonos genera la tabla usuario_telefono.</p>
+      </div>
+    </div>
+
+    <table>
+      <thead><tr><th>Elemento del DER</th><th>Se transforma en…</th></tr></thead>
+      <tbody>
+        <tr><td>Entidad</td><td>Una tabla, con el mismo nombre.</td></tr>
+        <tr><td>Atributo simple</td><td>Una columna de esa tabla.</td></tr>
+        <tr><td>Atributo identificador</td><td>La clave primaria (<em>primary key</em>) de la tabla.</td></tr>
+        <tr><td>Atributo compuesto</td><td>Una columna por cada parte (calle, número, colonia).</td></tr>
+        <tr><td>Atributo derivado</td><td>No se guarda: se calcula con una consulta (por ejemplo, la edad).</td></tr>
+      </tbody>
+    </table>
+
+    <!-- LAB 3 -->
+    <div class="lab" id="lab-mapeo">
+      <div class="lab-head"><span class="tag">Laboratorio 3</span><h3>Del diagrama a las tablas: ¿dónde va la llave foránea?</h3></div>
+      <div class="lab-body">
+        <p class="lab-intro">Elige un caso, lee la cardinalidad y decide cómo se implementa. Al responder verás las tablas resultantes, con las llaves resaltadas.</p>
+        <div class="tabrow" role="tablist" aria-label="Casos del laboratorio 3" id="mp-tabs"></div>
+        <div id="mp-case"></div>
+      </div>
+    </div>
+
+    <div class="example-block">
+      <div class="example-header">Aplicando el mapeo al caso de la biblioteca</div>
+      <div class="example-body">
+        <p>El diagrama de la clase de modelado tenía las entidades USUARIO y LIBRO relacionadas por PRESTA (N:M) con atributos propios. Ya sabes qué hacer:</p>
+        <ul class="step-list">
+          <li><span class="step-n">1</span><span class="step-content">USUARIO &rarr; tabla <code>usuario</code>, con <code>matricula</code> como clave primaria. LIBRO &rarr; tabla <code>libro</code>, con <code>isbn</code>.</span></li>
+          <li><span class="step-n">2</span><span class="step-content">Como PRESTA es N:M, se crea la tabla intermedia <code>prestamo</code> con <code>matricula</code> e <code>isbn</code> como claves foráneas, más <code>fecha_prestamo</code> y <code>fecha_devolucion</code>.</span></li>
+          <li><span class="step-n">3</span><span class="step-content">Se agrega un identificador propio, <code>id_prestamo</code>: así el mismo usuario puede volver a pedir el mismo libro otro día sin chocar con la clave primaria.</span></li>
+          <li><span class="step-n">4</span><span class="step-content">Los teléfonos (atributo multivaluado) pasan a la tabla <code>usuario_telefono</code>, y una carrera con muchos usuarios (1:N) deja su llave en <code>usuario.id_carrera</code>.</span></li>
+        </ul>
+        <div class="result-line">Compruébalo: abre la pestaña "Estructura de la base de datos" de biblioteca_escolar.db y ejecuta la consulta 10.4 del archivo de consultas.</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ PRACTICA ============ -->
+  <section class="section">
+    <h2 class="section-title">Práctica guiada con herramientas</h2>
+    <p>La teoría se entiende mejor cuando se ve funcionar. Hoy usarás dos herramientas: una para <em>comprobar</em> la cardinalidad en una base ya construida y otra para <em>normalizar</em> en vivo.</p>
+
+    <h3>Parte A · Comprueba la cardinalidad en DB Browser for SQLite</h3>
+    <div class="tool-banner">
+      <span class="tool-icon">DB</span>
+      <span>Herramienta: <strong>DB Browser for SQLite</strong> con el archivo <code>biblioteca_escolar.db</code> y <code>consultas_biblioteca_escolar.sql</code>.</span>
+    </div>
+    <div class="example-block">
+      <div class="example-header">Pasos de la práctica A</div>
+      <div class="example-body">
+        <ul class="step-list">
+          <li><span class="step-n">1</span><span class="step-content">Abre la base de datos y entra a la pestaña <strong>Ejecutar SQL</strong>; carga el archivo de consultas.</span></li>
+          <li><span class="step-n">2</span><span class="step-content">Desplázate al <strong>Bloque 10</strong>. Selecciona la consulta 10.1 y ejecútala con <strong>Ctrl + Enter</strong>. Anota el máximo en cada sentido y deduce la cardinalidad CARRERA &ndash; USUARIO.</span></li>
+          <li><span class="step-n">3</span><span class="step-content">Repite con las consultas 10.2 (LIBRO &ndash; AUTOR) y 10.3 (USUARIO &ndash; LIBRO). Si ambos máximos son mayores que 1, la relación es N:M.</span></li>
+          <li><span class="step-n">4</span><span class="step-content">Ejecuta 10.4 y 10.5: identifica qué tablas tienen llaves foráneas y cuáles son tablas intermedias.</span></li>
+          <li><span class="step-n">5</span><span class="step-content">Reflexiona con la consulta 10.6 y 10.7: ¿por qué PRÉSTAMO &ndash; MULTA parece 1:1 con los datos de hoy, aunque el modelo es 1:N?</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout note">
+      <p><strong>Idea clave de la parte A:</strong> los datos solo muestran lo que existe hoy; la cardinalidad es una <em>regla del modelo</em>. Por eso se define leyendo el negocio y no contando filas.</p>
+    </div>
+
+    <h3 style="margin-top:1.8rem;">Parte B · Normalizando en vivo con DB Fiddle</h3>
+    <div class="tool-banner">
+      <span class="tool-icon">DB</span>
+      <span>Herramienta: <a href="https://www.db-fiddle.com/" target="_blank" rel="noopener">DB Fiddle</a> (db-fiddle.com), un editor de SQL en el navegador con MySQL, PostgreSQL y SQLite, sin instalar nada.</span>
+    </div>
+    <div class="example-block">
+      <div class="example-header">Pasos de la práctica B</div>
+      <div class="example-body">
+        <ul class="step-list">
+          <li><span class="step-n">1</span><span class="step-content">Entra a <strong>db-fiddle.com</strong> y selecciona el motor <strong>MySQL 8.0</strong>.</span></li>
+          <li><span class="step-n">2</span><span class="step-content">Copia el Bloque 1 (la tabla universal) en el panel <strong>Schema SQL</strong>, escribe la consulta en <strong>Query SQL</strong> y presiona <strong>Run</strong>. Observa cuántas veces se repite el correo del Mtro. Salas.</span></li>
+          <li><span class="step-n">3</span><span class="step-content">Abre un <strong>nuevo Fiddle</strong> y pega el Bloque 2 (las cuatro tablas en 3FN). Ejecuta el Bloque 3 y comprueba que obtienes la misma información sin haberla duplicado.</span></li>
+          <li><span class="step-n">4</span><span class="step-content">Ejecuta el Bloque 4: cambia el correo con un solo <code>UPDATE</code> y vuelve a consultar. Compáralo con el Simulador de anomalías.</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <span class="code-label">Bloque 1 — Schema SQL: tabla universal (sin normalizar)</span>
+    <div class="code-block">CREATE TABLE inscripcion_universal (
+  matricula        VARCHAR(10),
+  nombre_alumno    VARCHAR(60),
+  clave_curso      VARCHAR(10),
+  nombre_curso     VARCHAR(60),
+  profesor         VARCHAR(60),
+  correo_profesor  VARCHAR(60),
+  calificacion     DECIMAL(4,1)
+);
+
+INSERT INTO inscripcion_universal VALUES
+('A001','Ana López','BD1','Bases de Datos I','Mtro. Salas','salas@ejemplo.edu.mx',9.2),
+('A001','Ana López','PROG2','Programación II','Mtra. Ruiz','ruiz@ejemplo.edu.mx',8.5),
+('A002','Luis Pérez','BD1','Bases de Datos I','Mtro. Salas','salas@ejemplo.edu.mx',7.8),
+('A002','Luis Pérez','BD2','Bases de Datos II','Mtro. Salas','salas@ejemplo.edu.mx',8.0),
+('A003','Sofía Cruz','BD1','Bases de Datos I','Mtro. Salas','salas@ejemplo.edu.mx',9.5),
+('A003','Sofía Cruz','PROG2','Programación II','Mtra. Ruiz','ruiz@ejemplo.edu.mx',8.9);
+
+<span class="cm">-- Query SQL:</span>
+SELECT * FROM inscripcion_universal;
+<span class="cm">-- Observen: el correo del Mtro. Salas aparece cuatro veces.</span></div>
+
+    <span class="code-label">Bloque 2 — Schema SQL: el mismo caso, ya en 3FN</span>
+    <div class="code-block">CREATE TABLE alumno (
+  matricula   VARCHAR(10) PRIMARY KEY,
+  nombre      VARCHAR(60)
+);
+
+CREATE TABLE profesor (
+  id_profesor INT PRIMARY KEY,
+  nombre      VARCHAR(60),
+  correo      VARCHAR(60)
+);
+
+<span class="cm">-- PROFESOR 1:N CURSO  ->  la llave foránea va en CURSO (lado N)</span>
+CREATE TABLE curso (
+  clave_curso   VARCHAR(10) PRIMARY KEY,
+  nombre_curso  VARCHAR(60),
+  id_profesor   INT,
+  FOREIGN KEY (id_profesor) REFERENCES profesor(id_profesor)
+);
+
+<span class="cm">-- ALUMNO N:M CURSO  ->  tabla intermedia con dos llaves foráneas</span>
+CREATE TABLE inscripcion (
+  matricula     VARCHAR(10),
+  clave_curso   VARCHAR(10),
+  calificacion  DECIMAL(4,1),
+  PRIMARY KEY (matricula, clave_curso),
+  FOREIGN KEY (matricula)   REFERENCES alumno(matricula),
+  FOREIGN KEY (clave_curso) REFERENCES curso(clave_curso)
+);
+
+INSERT INTO profesor VALUES
+(1,'Mtro. Salas','salas@ejemplo.edu.mx'),
+(2,'Mtra. Ruiz','ruiz@ejemplo.edu.mx');
+
+INSERT INTO alumno VALUES
+('A001','Ana López'), ('A002','Luis Pérez'), ('A003','Sofía Cruz');
+
+INSERT INTO curso VALUES
+('BD1','Bases de Datos I',1),
+('PROG2','Programación II',2),
+('BD2','Bases de Datos II',1);
+
+INSERT INTO inscripcion VALUES
+('A001','BD1',9.2), ('A001','PROG2',8.5), ('A002','BD1',7.8),
+('A002','BD2',8.0), ('A003','BD1',9.5), ('A003','PROG2',8.9);</div>
+
+    <span class="code-label">Bloque 3 — Query SQL: reconstruir la vista original con JOIN</span>
+    <div class="code-block">SELECT a.nombre AS alumno, c.nombre_curso, p.nombre AS profesor,
+       p.correo AS correo_profesor, i.calificacion
+FROM inscripcion i
+JOIN alumno   a ON a.matricula   = i.matricula
+JOIN curso    c ON c.clave_curso = i.clave_curso
+JOIN profesor p ON p.id_profesor = c.id_profesor
+ORDER BY a.nombre;
+
+<span class="cm">-- Misma información que la tabla universal, pero cada dato se guardó una sola vez.</span></div>
+
+    <span class="code-label">Bloque 4 — Query SQL: corregir el correo en un solo lugar</span>
+    <div class="code-block">UPDATE profesor SET correo = 'salas@nuevo.example' WHERE id_profesor = 1;
+
+<span class="cm">-- Vuelve a ejecutar el Bloque 3: las cuatro filas del Mtro. Salas ya muestran el correo nuevo.
+-- Con la tabla universal habría sido necesario actualizar cuatro filas.</span></div>
+
+    <div class="result-line">Entregable de la práctica: liga o captura de tu Fiddle con los bloques ejecutados, y tus respuestas de la parte A, como evidencia de la actividad formativa.</div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ACTIVIDAD -->
+  <section class="section">
+    <h2 class="section-title">Actividad de aprendizaje</h2>
+    <div class="example-block">
+      <div class="example-header">Reporte de normalización y esquema relacional lógico — productos de la Unidad 3</div>
+      <div class="example-body">
+        <p>Retomen el Diagrama Entidad-Relación que diseñaron en la clase de modelado (tienda, consultorio médico o gimnasio) y:</p>
+        <ul class="step-list">
+          <li><span class="step-n">1</span><span class="step-content">Indiquen la <strong>cardinalidad</strong> de cada relación aplicando la pregunta de los dos sentidos, y escriban la regla de negocio que la justifica.</span></li>
+          <li><span class="step-n">2</span><span class="step-content">Construyan una "tabla universal" hipotética con la información de su caso y documenten, paso a paso, su normalización hasta la Tercera Forma Normal, señalando qué dependencia parcial o transitiva eliminaron en cada paso.</span></li>
+          <li><span class="step-n">3</span><span class="step-content">Transformen su DER en un esquema relacional lógico, definiendo tablas, claves primarias, claves foráneas y tablas intermedias, y señalen dónde quedó cada llave según la cardinalidad.</span></li>
+        </ul>
+        <div class="result-line">Entregables: Reporte de normalización — 20% de la calificación final. Esquema relacional lógico — 20% de la calificación final.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CIERRE -->
+  <section class="section">
+    <h2 class="section-title">Para cerrar</h2>
+    <p>Cada equipo compartirá brevemente una relación de su caso: su cardinalidad, dónde quedó la llave foránea y una dependencia funcional que haya identificado. El grupo retroalimentará verificando que el esquema final cumpla, al menos, la Tercera Forma Normal.</p>
+    <div class="mixtle-tip">
+      <img src="imagen2.png" alt="Mixtle">
+      <div class="callout" style="margin:0; flex:1;">
+        <p><strong>Mixtle recuerda:</strong> un esquema bien normalizado no es el que tiene más tablas, sino el que tiene exactamente las tablas necesarias, cada una contando una sola historia. Y antes de crear cualquier tabla, haz las dos preguntas de la cardinalidad: la respuesta te dice dónde va cada llave.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCLUSIÓN -->
+  <section class="section">
+    <h2 class="section-title">Conclusión</h2>
+    <p>La cardinalidad y la normalización son dos caras del mismo diseño: la primera describe cómo se relacionan los datos y la segunda asegura que cada dato se guarde en un solo lugar. Leer cada relación en los dos sentidos permite saber si la llave foránea va del lado N o si hace falta una tabla intermedia, y aplicar 1FN, 2FN y 3FN elimina la redundancia y las anomalías de actualización, inserción y borrado. Con el esquema relacional lógico definido, la siguiente unidad lo hará cobrar vida mediante sentencias SQL.</p>
+  </section>
+
+  <!-- REFERENCIAS -->
+  <section class="section">
+    <h2 class="section-title">Referencias bibliográficas</h2>
+    <ul>
+      <li>Silberschatz, A., Korth, H. F. y Sudarshan, S. (2021). <em>Database system concepts</em> (7.ª ed.). McGraw-Hill.</li>
+      <li>Piñeiro, J. O. S. E. (2024). <em>Diseño de bases de datos relacionales</em>. Ediciones Paraninfo, SA.</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <span><strong>IEDEP</strong> · Bases de Datos I — Unidad 3</span>
+  <span>Mtro. José Armando Vera Rodríguez · Sábado 10 de octubre de 2026</span>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ============================================================
+     LABORATORIO 1 · Conecta y descubre la cardinalidad
+     ============================================================ */
+  var SC = [
+    { tab: "Uno a uno", izq: "ESTUDIANTE", der: "CREDENCIAL",
+      items: [["Ana", "Luis", "Sofía"], ["C-101", "C-102", "C-103"]],
+      maxL: 1, maxR: 1, goal: "1:1", minLinks: 2,
+      regla: "Cada estudiante recibe una sola credencial y cada credencial pertenece a un solo estudiante.",
+      reto: "Reto: une al menos dos parejas. Después intenta darle una segunda credencial a Ana y observa qué ocurre.",
+      ok: "Eso es 1:1. En cada sentido el máximo es 1: nadie tiene dos credenciales y ninguna credencial es de dos personas.",
+      ex: [[0, 0], [1, 1], [2, 2]] },
+    { tab: "Uno a muchos", izq: "DOCENTE", der: "GRUPO",
+      items: [["Mtro. Salas", "Mtra. Ruiz", "Mtro. Soto"], ["BD1-A", "BD1-B", "PROG-A", "PROG-B"]],
+      maxL: 99, maxR: 1, goal: "1:N", minLinks: 2,
+      regla: "Un docente puede ser titular de varios grupos, pero cada grupo tiene un solo docente titular.",
+      reto: "Reto: conecta a un docente con dos grupos. Después intenta que otro docente comparta uno de esos grupos y observa qué ocurre.",
+      ok: "Eso es 1:N. Hay un lado de muchos (los grupos de un docente) y un lado de uno (cada grupo tiene un solo docente). La llave foránea irá en GRUPO.",
+      ex: [[0, 0], [0, 1], [1, 2], [2, 3]] },
+    { tab: "Muchos a muchos", izq: "USUARIO", der: "LIBRO",
+      items: [["Ana", "Luis", "Sofía"], ["Pedro Páramo", "Aura", "Rayuela", "Ficciones"]],
+      maxL: 99, maxR: 99, goal: "N:M", minLinks: 3,
+      regla: "Un usuario puede pedir prestados varios libros a lo largo del cuatrimestre y un mismo libro pasa por las manos de varios usuarios.",
+      reto: "Reto: logra que algún usuario tenga dos libros y que algún libro lo hayan pedido dos usuarios.",
+      ok: "Eso es N:M. En ambos sentidos hay muchos. Esta relación necesita una tabla intermedia (prestamo), que además guarda las fechas.",
+      ex: [[0, 0], [0, 1], [1, 1], [1, 2], [2, 0], [2, 3]] }
+  ];
+  var cur = 0, links = [], sel = null;
+
+  var elTabs = document.getElementById("pg-tabs"), elRule = document.getElementById("pg-rule"),
+      elReto = document.getElementById("pg-reto"), svg = document.getElementById("pg-svg"),
+      elL = document.getElementById("pg-l"), elR = document.getElementById("pg-r"),
+      elC = document.getElementById("pg-card"), elMsg = document.getElementById("pg-msg"),
+      elLl = document.getElementById("pg-l-lbl"), elRl = document.getElementById("pg-r-lbl");
+
+  function pgBuildTabs() {
+    elTabs.innerHTML = "";
+    SC.forEach(function (s, i) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "tabbtn"; b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", i === cur ? "true" : "false");
+      b.textContent = s.izq.charAt(0) + s.izq.slice(1).toLowerCase() + " y " + s.der.toLowerCase() + " · " + s.tab;
+      b.addEventListener("click", function () { cur = i; links = []; sel = null; pgBuildTabs(); pgRender(); });
+      elTabs.appendChild(b);
+    });
+  }
+  function rowsH() { var s = SC[cur]; return Math.max(s.items[0].length, s.items[1].length) * 62 + 30; }
+  function py(side, i) {
+    var n = SC[cur].items[side].length, H = rowsH(), total = (n - 1) * 62;
+    return (H + 20 - total) / 2 + i * 62;
+  }
+  function has(l, r) { for (var k = 0; k < links.length; k++) if (links[k][0] === l && links[k][1] === r) return k; return -1; }
+
+  function pgToggle(l, r) {
+    var k = has(l, r);
+    if (k >= 0) links.splice(k, 1); else links.push([l, r]);
+  }
+  function degrees() {
+    var s = SC[cur], dL = s.items[0].map(function () { return 0; }), dR = s.items[1].map(function () { return 0; });
+    links.forEach(function (x) { dL[x[0]]++; dR[x[1]]++; });
+    return { dL: dL, dR: dR };
+  }
+  function label(mL, mR) {
+    if (!mL && !mR) return "—";
+    if (mL <= 1 && mR <= 1) return "1:1";
+    if (mL > 1 && mR <= 1) return "1:N";
+    if (mL <= 1 && mR > 1) return "N:1";
+    return "N:M";
+  }
+
+  function pgRender() {
+    var s = SC[cur], d = degrees(), H = rowsH() + 20, out = "";
+    svg.setAttribute("viewBox", "0 0 640 " + H);
+    elRule.textContent = "Regla del caso: " + s.regla;
+    elReto.textContent = s.reto;
+    out += '<text class="pg-colname" x="115" y="16">' + s.izq + '</text><text class="pg-colname" x="525" y="16">' + s.der + '</text>';
+    var badL = [], badR = [];
+    d.dL.forEach(function (v, i) { if (v > s.maxL) badL.push(i); });
+    d.dR.forEach(function (v, i) { if (v > s.maxR) badR.push(i); });
+    links.forEach(function (x, k) {
+      var bad = badL.indexOf(x[0]) >= 0 || badR.indexOf(x[1]) >= 0;
+      var p = "M190," + py(0, x[0]) + " C320," + py(0, x[0]) + " 320," + py(1, x[1]) + " 450," + py(1, x[1]);
+      out += '<path class="pg-link' + (bad ? " bad" : "") + '" d="' + p + '"/>';
+      out += '<path class="pg-hit" data-link="' + k + '" d="' + p + '"><title>Quitar conexión</title></path>';
+    });
+    [0, 1].forEach(function (side) {
+      s.items[side].forEach(function (name, i) {
+        var x = side === 0 ? 40 : 450, y = py(side, i), deg = side === 0 ? d.dL[i] : d.dR[i];
+        var bad = (side === 0 ? badL : badR).indexOf(i) >= 0;
+        var on = sel && sel.side === side && sel.i === i;
+        out += '<g class="pg-node' + (on ? " sel" : "") + (bad ? " bad" : "") + '" data-side="' + side + '" data-i="' + i + '" role="button" tabindex="0" aria-label="' + (side === 0 ? s.izq : s.der) + " " + name + ", " + deg + ' conexiones">' +
+               '<rect x="' + x + '" y="' + (y - 20) + '" width="150" height="40" rx="8"/><text x="' + (x + 75) + '" y="' + (y + 5) + '" text-anchor="middle">' + name + '</text></g>';
+        var bx = side === 0 ? x + 150 : x;
+        out += '<g class="pg-badge' + (bad ? " bad" : "") + '"><circle cx="' + bx + '" cy="' + y + '" r="11"/><text x="' + bx + '" y="' + (y + 4) + '">' + deg + '</text></g>';
+      });
+    });
+    svg.innerHTML = out;
+
+    var mL = Math.max.apply(null, d.dL), mR = Math.max.apply(null, d.dR);
+    elL.textContent = mL; elR.textContent = mR;
+    elLl.textContent = "Máximo de " + s.der.toLowerCase() + "s por cada " + s.izq.toLowerCase();
+    elRl.textContent = "Máximo de " + s.izq.toLowerCase() + "s por cada " + s.der.toLowerCase();
+    elC.textContent = label(mL, mR);
+
+    var viol = [];
+    badL.forEach(function (i) { viol.push("«" + s.items[0][i] + "» (" + s.izq.toLowerCase() + ") tiene " + d.dL[i] + " conexiones, pero la regla permite como máximo " + s.maxL + "."); });
+    badR.forEach(function (i) { viol.push("«" + s.items[1][i] + "» (" + s.der.toLowerCase() + ") tiene " + d.dR[i] + " conexiones, pero la regla permite como máximo " + s.maxR + "."); });
+
+    if (viol.length) {
+      elMsg.className = "pg-msg warn";
+      elMsg.innerHTML = "<strong>Rompiste la regla del caso:</strong><ul><li>" + viol.join("</li><li>") + "</li></ul>Quita la conexión que sobra (clic sobre la línea punteada).";
+    } else if (label(mL, mR) === s.goal && links.length >= s.minLinks) {
+      elMsg.className = "pg-msg ok";
+      elMsg.innerHTML = "<strong>Lo lograste.</strong> " + s.ok;
+    } else if (!links.length) {
+      elMsg.className = "pg-msg info";
+      elMsg.textContent = "Haz clic en un elemento de la izquierda y luego en uno de la derecha.";
+    } else {
+      elMsg.className = "pg-msg info";
+      elMsg.textContent = sel ? "Ahora elige un elemento del otro lado para completar la conexión." : "Sigue dibujando: todavía no demuestras la cardinalidad de este caso.";
+    }
+  }
+
+  svg.addEventListener("click", function (e) {
+    var t = e.target, node = t.closest ? t.closest(".pg-node") : null, hit = t.closest ? t.closest(".pg-hit") : null;
+    if (hit) { links.splice(parseInt(hit.getAttribute("data-link"), 10), 1); sel = null; pgRender(); return; }
+    if (!node) { sel = null; pgRender(); return; }
+    var side = parseInt(node.getAttribute("data-side"), 10), i = parseInt(node.getAttribute("data-i"), 10);
+    if (!sel) { sel = { side: side, i: i }; }
+    else if (sel.side === side) { sel = (sel.i === i) ? null : { side: side, i: i }; }
+    else { pgToggle(side === 1 ? sel.i : i, side === 1 ? i : sel.i); sel = null; }
+    pgRender();
+  });
+  svg.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") {
+      var node = e.target.closest ? e.target.closest(".pg-node") : null;
+      if (node) { e.preventDefault(); node.dispatchEvent(new MouseEvent("click", { bubbles: true })); }
+    }
+  });
+  document.getElementById("pg-clear").addEventListener("click", function () { links = []; sel = null; pgRender(); });
+  document.getElementById("pg-ex").addEventListener("click", function () { links = SC[cur].ex.map(function (x) { return x.slice(); }); sel = null; pgRender(); });
+  pgBuildTabs(); pgRender();
+
+  /* ============================================================
+     LABORATORIO 2 · Quiz de cardinalidad
+     ============================================================ */
+  var Q = [
+    { a: "ESTUDIANTE", b: "CREDENCIAL", pa: "estudiantes", pb: "credenciales", r: "1:1",
+      t: "En el instituto, cada estudiante recibe una única credencial institucional y cada credencial pertenece a un solo estudiante.",
+      ab: "Un estudiante tiene como máximo 1 credencial.", ba: "Una credencial pertenece a 1 solo estudiante." },
+    { a: "DEPARTAMENTO", b: "EMPLEADO", pa: "departamentos", pb: "empleados", r: "1:N",
+      t: "En una empresa, cada departamento agrupa a varios empleados, pero cada empleado trabaja en un solo departamento.",
+      ab: "Un departamento tiene muchos empleados.", ba: "Un empleado pertenece a 1 solo departamento." },
+    { a: "ALUMNO", b: "MATERIA", pa: "alumnos", pb: "materias", r: "N:M",
+      t: "Durante el cuatrimestre, un alumno se inscribe en varias materias y cada materia es cursada por muchos alumnos.",
+      ab: "Un alumno cursa muchas materias.", ba: "Una materia la cursan muchos alumnos." },
+    { a: "PRODUCTO", b: "CATEGORÍA", pa: "productos", pb: "categorías", r: "N:1",
+      t: "En una tienda en línea, cada producto pertenece a una sola categoría y una categoría reúne muchos productos.",
+      ab: "Un producto pertenece a 1 sola categoría.", ba: "Una categoría contiene muchos productos." },
+    { a: "PACIENTE", b: "EXPEDIENTE", pa: "pacientes", pb: "expedientes", r: "1:1",
+      t: "En una clínica, cada paciente tiene un expediente clínico y cada expediente corresponde a un único paciente.",
+      ab: "Un paciente tiene 1 solo expediente.", ba: "Un expediente es de 1 solo paciente." },
+    { a: "CLIENTE", b: "PEDIDO", pa: "clientes", pb: "pedidos", r: "1:N",
+      t: "Un cliente de una papelería puede realizar muchos pedidos a lo largo del año; cada pedido lo realiza un solo cliente.",
+      ab: "Un cliente hace muchos pedidos.", ba: "Un pedido lo hace 1 solo cliente." },
+    { a: "LIBRO", b: "AUTOR", pa: "libros", pb: "autores", r: "N:M",
+      t: "Un libro puede ser escrito por varios autores, y un autor puede escribir varios libros.",
+      ab: "Un libro tiene muchos autores.", ba: "Un autor escribe muchos libros." },
+    { a: "VEHÍCULO", b: "SERVICIO", pa: "vehículos", pb: "servicios", r: "1:N",
+      t: "En un taller mecánico, un vehículo recibe muchos servicios a lo largo del tiempo, pero cada servicio se registra para un solo vehículo.",
+      ab: "Un vehículo recibe muchos servicios.", ba: "Un servicio es de 1 solo vehículo." }
+  ];
+  var qRoot = document.getElementById("qz-root"), order, qi, score, answered;
+
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+  function low(s) { return s.charAt(0) + s.slice(1).toLowerCase(); }
+  function qStart() { order = shuffle(Q.map(function (_, i) { return i; })); qi = 0; score = 0; qShow(); }
+  function qShow() {
+    if (qi >= order.length) { qEnd(); return; }
+    var q = Q[order[qi]]; answered = false;
+    var a1 = q.a.toLowerCase(), b1 = q.b.toLowerCase();
+    var opts = [
+      ["1:1", "1 " + a1 + " con 1 " + b1],
+      ["1:N", "1 " + a1 + " con N " + q.pb],
+      ["N:1", "N " + q.pa + " con 1 " + b1],
+      ["N:M", "N " + q.pa + " con N " + q.pb]
+    ];
+    var h = '<div class="qz-top"><span>Caso ' + (qi + 1) + " de " + order.length + '</span><span>Aciertos: <strong>' + score + '</strong></span></div>' +
+            '<div class="qz-bar"><i style="width:' + (qi / order.length * 100) + '%"></i></div>' +
+            '<div class="qz-pair"><span class="qz-ent">' + q.a + '</span><span class="qz-dash">&mdash;</span><span class="qz-ent b">' + q.b + '</span></div>' +
+            '<p class="qz-case">' + q.t + '</p><div class="opts">';
+    opts.forEach(function (o) { h += '<button type="button" class="opt" data-v="' + o[0] + '"><strong>' + o[0] + '</strong><small>' + o[1] + '</small></button>'; });
+    h += '</div><div id="qz-fb" aria-live="polite"></div>';
+    qRoot.innerHTML = h;
+    Array.prototype.forEach.call(qRoot.querySelectorAll(".opt"), function (b) {
+      b.addEventListener("click", function () { qAnswer(b.getAttribute("data-v")); });
+    });
+  }
+  function qAnswer(v) {
+    if (answered) return; answered = true;
+    var q = Q[order[qi]], good = v === q.r;
+    if (good) score++;
+    Array.prototype.forEach.call(qRoot.querySelectorAll(".opt"), function (b) {
+      b.disabled = true;
+      if (b.getAttribute("data-v") === q.r) b.classList.add("right");
+      else if (b.getAttribute("data-v") === v) b.classList.add("wrong");
+    });
+    var fb = document.getElementById("qz-fb");
+    fb.className = "fb " + (good ? "ok" : "no");
+    fb.innerHTML = '<p><b>' + (good ? "Correcto." : "No es esa.") + '</b> La respuesta es <b>' + q.r + '</b>.</p>' +
+                   '<p><b>' + low(q.a) + " &rarr; " + q.b.toLowerCase() + ':</b> ' + q.ab + '</p>' +
+                   '<p><b>' + q.b.toLowerCase() + " &rarr; " + q.a.toLowerCase() + ':</b> ' + q.ba + '</p>' +
+                   '<div class="btn-row"><button type="button" class="btn" id="qz-next">' + (qi + 1 < order.length ? "Siguiente caso" : "Ver resultado") + '</button></div>';
+    document.getElementById("qz-next").addEventListener("click", function () { qi++; qShow(); });
+    document.getElementById("qz-next").focus();
+  }
+  function qEnd() {
+    var n = order.length, msg;
+    if (score === n) msg = "Dominas la cardinalidad. Ya puedes pasar a decidir dónde va cada llave foránea.";
+    else if (score >= n - 2) msg = "Muy bien. Repasa los casos que fallaste leyendo la relación en los dos sentidos.";
+    else msg = "Vale la pena repasar: vuelve al Laboratorio 1 y practica la pregunta de los dos sentidos.";
+    qRoot.innerHTML = '<div class="qz-bar"><i style="width:100%"></i></div><div class="qz-end"><div class="score">' + score + " / " + n + '</div><p>' + msg + '</p><div class="btn-row" style="justify-content:center;"><button type="button" class="btn" id="qz-again">Intentar de nuevo</button></div></div>';
+    document.getElementById("qz-again").addEventListener("click", qStart);
+  }
+  qStart();
+
+  /* ============================================================
+     NORMALIZADOR: pestanas
+     ============================================================ */
+  var nmTabs = document.getElementById("nm-tabs");
+  nmTabs.addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest(".tabbtn") : null;
+    if (!b) return;
+    var st = b.getAttribute("data-st");
+    Array.prototype.forEach.call(nmTabs.querySelectorAll(".tabbtn"), function (x) { x.setAttribute("aria-selected", x === b ? "true" : "false"); });
+    for (var i = 0; i < 4; i++) document.getElementById("st" + i).hidden = (String(i) !== st);
+  });
+
+  /* ============================================================
+     SIMULADOR DE ANOMALIA
+     ============================================================ */
+  var VIEJO = "salas@ejemplo.edu.mx", NUEVO = "salas@nuevo.example";
+  var FILAS = [
+    ["Ana López", "BD1", "Mtro. Salas", VIEJO], ["Ana López", "PROG2", "Mtra. Ruiz", "ruiz@ejemplo.edu.mx"],
+    ["Luis Pérez", "BD1", "Mtro. Salas", VIEJO], ["Luis Pérez", "BD2", "Mtro. Salas", VIEJO],
+    ["Sofía Cruz", "BD1", "Mtro. Salas", VIEJO], ["Sofía Cruz", "PROG2", "Mtra. Ruiz", "ruiz@ejemplo.edu.mx"]
+  ];
+  var aRows, bCorreo, aDone, bDone;
+  function anInit() {
+    aRows = FILAS.map(function (r) { return r.slice(); }); bCorreo = VIEJO; aDone = false; bDone = false;
+    anRender();
+    document.getElementById("an-a-note").textContent = "";
+    document.getElementById("an-b-note").textContent = "";
+    document.getElementById("an-a-btn").disabled = false; document.getElementById("an-b-btn").disabled = false;
+  }
+  function anRender() {
+    var tA = "", tB = "";
+    aRows.forEach(function (r, i) {
+      var cls = "";
+      if (aDone && r[2] === "Mtro. Salas") cls = r[3] === NUEVO ? "changed" : "stale";
+      tA += "<tr><td>" + r[0] + "</td><td>" + r[1] + "</td><td>" + r[2] + '</td><td class="' + cls + '">' + r[3] + "</td></tr>";
+    });
+    document.querySelector("#an-a tbody").innerHTML = tA;
+    document.querySelector("#an-b-prof tbody").innerHTML =
+      '<tr><td>1</td><td>Mtro. Salas</td><td class="' + (bDone ? "changed" : "") + '">' + bCorreo + "</td></tr><tr><td>2</td><td>Mtra. Ruiz</td><td>ruiz@ejemplo.edu.mx</td></tr>";
+    FILAS.forEach(function (r) {
+      var c = r[2] === "Mtro. Salas" ? bCorreo : r[3];
+      tB += "<tr><td>" + r[0] + "</td><td>" + r[1] + "</td><td>" + r[2] + '</td><td class="' + (bDone && r[2] === "Mtro. Salas" ? "changed" : "") + '">' + c + "</td></tr>";
+    });
+    document.querySelector("#an-b tbody").innerHTML = tB;
+  }
+  document.getElementById("an-a-btn").addEventListener("click", function () {
+    var n = 0;
+    aRows.forEach(function (r) { if (r[2] === "Mtro. Salas" && n < 2) { r[3] = NUEVO; n++; } });
+    aDone = true; anRender();
+    var note = document.getElementById("an-a-note");
+    note.style.color = "#8C1D18";
+    note.textContent = "Se corrigieron 2 de 4 filas. Ahora el Mtro. Salas tiene dos correos distintos: la base quedó inconsistente.";
+    this.disabled = true;
+  });
+  document.getElementById("an-b-btn").addEventListener("click", function () {
+    bCorreo = NUEVO; bDone = true; anRender();
+    var note = document.getElementById("an-b-note");
+    note.style.color = "#1F5B2B";
+    note.textContent = "Una sola fila corregida y las cuatro filas del Mtro. Salas ya muestran el correo nuevo.";
+    this.disabled = true;
+  });
+  document.getElementById("an-reset").addEventListener("click", anInit);
+  anInit();
+
+  /* ============================================================
+     LABORATORIO 3 · Del diagrama a las tablas
+     ============================================================ */
+  function mini(name, cols, rows, isNew) {
+    var h = '<div class="mt' + (isNew ? " new" : "") + '"><div class="mt-h">' + name + '</div><table><thead><tr>';
+    cols.forEach(function (c) {
+      var k = "";
+      (c.k || []).forEach(function (x) { k += '<span class="kb ' + x.toLowerCase() + '">' + x + "</span>"; });
+      h += "<th>" + c.n + k + "</th>";
+    });
+    h += "</tr></thead><tbody>";
+    rows.forEach(function (r) {
+      h += "<tr>";
+      r.forEach(function (v, i) { h += "<td" + (cols[i].hl ? ' class="hl"' : "") + ">" + v + "</td>"; });
+      h += "</tr>";
+    });
+    return h + "</tbody></table></div>";
+  }
+  var MP = [
+    { tab: "Docente y grupo", A: "DOCENTE", B: "GRUPO", c: "1:N", right: "fkB",
+      regla: "Un docente es titular de varios grupos; cada grupo tiene un solo docente titular.",
+      antes: [mini("DOCENTE", [{ n: "id_docente", k: ["PK"] }, { n: "nombre" }], [[1, "Mtro. Salas"], [2, "Mtra. Ruiz"]]),
+              mini("GRUPO", [{ n: "id_grupo", k: ["PK"] }, { n: "nombre" }], [[10, "BD1-A"], [11, "BD1-B"], [12, "PROG-A"]])],
+      despues: [mini("DOCENTE", [{ n: "id_docente", k: ["PK"] }, { n: "nombre" }], [[1, "Mtro. Salas"], [2, "Mtra. Ruiz"]]),
+                mini("GRUPO", [{ n: "id_grupo", k: ["PK"] }, { n: "nombre" }, { n: "id_docente", k: ["FK"], hl: true }], [[10, "BD1-A", 1], [11, "BD1-B", 1], [12, "PROG-A", 2]])],
+      why: "En 1:N la llave foránea va del lado del muchos: cada grupo guarda el id de su único docente. Hacerlo al revés obligaría a una celda de DOCENTE a guardar varios grupos, y eso rompe la 1FN.",
+      err: { fkA: "Si DOCENTE guardara el grupo, una sola celda tendría que contener varios grupos (BD1-A, BD1-B...): se rompería la 1FN.", inter: "Una tabla intermedia funcionaría, pero sobra: cada grupo tiene un solo docente, así que basta una columna en GRUPO." } },
+    { tab: "Usuario y libro", A: "USUARIO", B: "LIBRO", c: "N:M", right: "inter",
+      regla: "Un usuario pide prestados varios libros y un mismo libro lo piden varios usuarios. De cada préstamo interesa la fecha.",
+      antes: [mini("USUARIO", [{ n: "matricula", k: ["PK"] }, { n: "nombre" }], [["IED26001", "Karla"], ["IED26002", "Luis"]]),
+              mini("LIBRO", [{ n: "isbn", k: ["PK"] }, { n: "titulo" }], [["978-A", "Aura"], ["978-B", "Rayuela"]])],
+      despues: [mini("USUARIO", [{ n: "matricula", k: ["PK"] }, { n: "nombre" }], [["IED26001", "Karla"], ["IED26002", "Luis"]]),
+                mini("LIBRO", [{ n: "isbn", k: ["PK"] }, { n: "titulo" }], [["978-A", "Aura"], ["978-B", "Rayuela"]]),
+                mini("PRESTAMO", [{ n: "id_prestamo", k: ["PK"] }, { n: "matricula", k: ["FK"], hl: true }, { n: "isbn", k: ["FK"], hl: true }, { n: "fecha_prestamo", hl: true }],
+                     [[1, "IED26001", "978-A", "2026-09-30"], [2, "IED26001", "978-B", "2026-10-02"], [3, "IED26002", "978-A", "2026-10-05"]], true)],
+      why: "En N:M ninguna de las dos tablas puede guardar la llave de la otra (serían varios valores en una celda). Se crea una tabla intermedia con las dos llaves foráneas y los atributos propios de la relación, como la fecha.",
+      err: { fkA: "USUARIO tendría que guardar varios libros en una celda: rompe la 1FN.", fkB: "LIBRO tendría que guardar varios usuarios en una celda: rompe la 1FN." } },
+    { tab: "Carrera y usuario", A: "CARRERA", B: "USUARIO", c: "1:N", right: "fkB",
+      regla: "Una carrera tiene muchos estudiantes y docentes; cada usuario pertenece, como máximo, a una carrera.",
+      antes: [mini("CARRERA", [{ n: "id_carrera", k: ["PK"] }, { n: "nombre" }], [[1, "Sistemas"], [2, "Administración"]]),
+              mini("USUARIO", [{ n: "matricula", k: ["PK"] }, { n: "nombre" }], [["IED26001", "Karla"], ["IED26002", "Luis"], ["IED26003", "Sofía"]])],
+      despues: [mini("CARRERA", [{ n: "id_carrera", k: ["PK"] }, { n: "nombre" }], [[1, "Sistemas"], [2, "Administración"]]),
+                mini("USUARIO", [{ n: "matricula", k: ["PK"] }, { n: "nombre" }, { n: "id_carrera", k: ["FK"], hl: true }], [["IED26001", "Karla", 1], ["IED26002", "Luis", 2], ["IED26003", "Sofía", 1]])],
+      why: "Es el mismo patrón que el caso del docente: la llave foránea va en el lado N. Es justo lo que tiene la columna usuario.id_carrera de biblioteca_escolar.db.",
+      err: { fkA: "CARRERA guardaría muchas matrículas en una celda: rompe la 1FN.", inter: "Sería una tabla intermedia innecesaria: un usuario nunca tiene más de una carrera." } },
+    { tab: "Estudiante y credencial", A: "ESTUDIANTE", B: "CREDENCIAL", c: "1:1", right: "fkB",
+      regla: "Cada estudiante tiene una sola credencial y cada credencial es de un solo estudiante. Una credencial no puede existir sin su estudiante.",
+      antes: [mini("ESTUDIANTE", [{ n: "matricula", k: ["PK"] }, { n: "nombre" }], [["IED26001", "Karla"], ["IED26002", "Luis"]]),
+              mini("CREDENCIAL", [{ n: "folio", k: ["PK"] }, { n: "vigencia" }], [["C-101", "2027"], ["C-102", "2027"]])],
+      despues: [mini("ESTUDIANTE", [{ n: "matricula", k: ["PK"] }, { n: "nombre" }], [["IED26001", "Karla"], ["IED26002", "Luis"]]),
+                mini("CREDENCIAL", [{ n: "folio", k: ["PK"] }, { n: "vigencia" }, { n: "matricula", k: ["FK", "UQ"], hl: true }], [["C-101", "2027", "IED26001"], ["C-102", "2027", "IED26002"]])],
+      why: "En 1:1 la llave foránea va en la tabla que depende de la otra (la credencial no existe sin el estudiante) y se marca como UNIQUE, para que dos credenciales no apunten al mismo estudiante. Sin UNIQUE, sería en realidad una relación 1:N.",
+      err: { fkA: "Técnicamente se podría, pero dejaría a ESTUDIANTE con una columna vacía mientras no tenga credencial. La llave se coloca del lado que depende del otro.", inter: "Una tabla intermedia sería excesiva: no hay 'muchos' en ningún sentido." } },
+    { tab: "Libro y autor", A: "LIBRO", B: "AUTOR", c: "N:M", right: "inter",
+      regla: "Un libro puede tener varios autores y un autor puede escribir varios libros.",
+      antes: [mini("LIBRO", [{ n: "isbn", k: ["PK"] }, { n: "titulo" }], [["978-C", "Database system concepts"], ["978-D", "Aura"]]),
+              mini("AUTOR", [{ n: "id_autor", k: ["PK"] }, { n: "nombre" }], [[1, "A. Silberschatz"], [2, "H. Korth"], [3, "C. Fuentes"]])],
+      despues: [mini("LIBRO", [{ n: "isbn", k: ["PK"] }, { n: "titulo" }], [["978-C", "Database system concepts"], ["978-D", "Aura"]]),
+                mini("AUTOR", [{ n: "id_autor", k: ["PK"] }, { n: "nombre" }], [[1, "A. Silberschatz"], [2, "H. Korth"], [3, "C. Fuentes"]]),
+                mini("LIBRO_AUTOR", [{ n: "isbn", k: ["PK", "FK"], hl: true }, { n: "id_autor", k: ["PK", "FK"], hl: true }], [["978-C", 1], ["978-C", 2], ["978-D", 3]], true)],
+      why: "Otra N:M: tabla intermedia con dos llaves foráneas. Aquí no hay atributos propios, así que la clave primaria es la pareja (isbn, id_autor), que además impide repetir el mismo autor en el mismo libro.",
+      err: { fkA: "LIBRO tendría que guardar varios autores en una celda: rompe la 1FN.", fkB: "AUTOR tendría que guardar varios libros en una celda: rompe la 1FN." } }
+  ];
+  var mpCur = 0, mpTabs = document.getElementById("mp-tabs"), mpCase = document.getElementById("mp-case");
+
+  function mpTabsBuild() {
+    mpTabs.innerHTML = "";
+    MP.forEach(function (m, i) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "tabbtn"; b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", i === mpCur ? "true" : "false"); b.textContent = m.tab;
+      b.addEventListener("click", function () { mpCur = i; mpTabsBuild(); mpShow(); });
+      mpTabs.appendChild(b);
+    });
+  }
+  function mpShow() {
+    var m = MP[mpCur], h = "";
+    h += '<div class="er-line"><span class="er-ent">' + m.A + '</span><span class="er-rel"><i></i><b>' + m.c + '</b><i></i></span><span class="er-ent">' + m.B + '</span></div>';
+    h += '<div class="pg-rule" style="margin-top:.8rem;">' + m.regla + "</div>";
+    h += '<div class="mt-wrap">' + m.antes.join("") + "</div>";
+    h += "<p><strong>¿Cómo se implementa esta relación como tablas?</strong></p><div class=\"opts\" style=\"grid-template-columns:repeat(3,1fr);\" id=\"mp-opts\">";
+    h += '<button type="button" class="opt" data-v="fkA"><strong>FK en ' + m.A + "</strong><small>La llave de " + m.B.toLowerCase() + " se guarda en " + m.A.toLowerCase() + "</small></button>";
+    h += '<button type="button" class="opt" data-v="fkB"><strong>FK en ' + m.B + "</strong><small>La llave de " + m.A.toLowerCase() + " se guarda en " + m.B.toLowerCase() + "</small></button>";
+    h += '<button type="button" class="opt" data-v="inter"><strong>Tabla intermedia</strong><small>Una tabla nueva con las dos llaves</small></button></div>';
+    h += '<div id="mp-res" aria-live="polite"></div>';
+    mpCase.innerHTML = h;
+    var opts = document.getElementById("mp-opts");
+    if (window.matchMedia && window.matchMedia("(max-width: 640px)").matches) opts.style.gridTemplateColumns = "1fr";
+    Array.prototype.forEach.call(opts.querySelectorAll(".opt"), function (b) {
+      b.addEventListener("click", function () { mpAnswer(b.getAttribute("data-v"), opts); });
+    });
+  }
+  function mpAnswer(v, opts) {
+    var m = MP[mpCur], good = v === m.right;
+    Array.prototype.forEach.call(opts.querySelectorAll(".opt"), function (b) {
+      b.disabled = true;
+      if (b.getAttribute("data-v") === m.right) b.classList.add("right");
+      else if (b.getAttribute("data-v") === v) b.classList.add("wrong");
+    });
+    var res = document.getElementById("mp-res");
+    var html = '<div class="fb ' + (good ? "ok" : "no") + '"><p><b>' + (good ? "Correcto." : "No es esa opción.") + "</b> " + (good ? m.why : (m.err[v] || "") + " " + m.why) + "</p></div>";
+    html += '<p class="reveal" style="margin:.9rem 0 .2rem;"><strong>Así quedan las tablas</strong> (en color, lo que se agregó):</p><div class="mt-wrap reveal">' + m.despues.join("") + "</div>";
+    res.innerHTML = html;
+  }
+  mpTabsBuild(); mpShow();
+
+})();
+</script>
+</body>
+</html>
