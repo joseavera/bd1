@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Scrum 1 — Cardinalidad</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  :root { --ida: #490b58; --vuelta: #B45F06; --vuelta-soft: #FDF1E3; --ida-soft: #F5E8EE; --ok: #1F5B2B; --bad: #8C1D18; }
+
+  /* ---------- Componentes comunes de la serie ---------- */
+  .mixtle-card { display: flex; gap: 1.5rem; align-items: center; }
+  .mixtle-card img { width: 110px; flex-shrink: 0; }
+  @media (max-width: 600px) { .mixtle-card { flex-direction: column; text-align: center; } }
+  .mixtle-tip { display: flex; gap: .9rem; align-items: flex-start; }
+  .mixtle-tip { margin: 1.2rem 0; }
+  .mixtle-tip img { width: 72px; flex-shrink: 0; align-self: center; }
+  .table-scroll { overflow-x: auto; margin: 1rem 0; }
+  .table-scroll table { margin: 0; }
+  code { font-family: var(--font-mono); font-size: .86em; background: var(--surface); padding: .05rem .3rem; border-radius: 3px; }
+
+  /* ---------- Barra del cronómetro ---------- */
+  .daily-bar {
+    position: sticky; top: 0; z-index: 60; background: #fff; border-bottom: 2px solid var(--guinda);
+    box-shadow: 0 3px 10px rgba(73,11,88,.12);
+  }
+  .daily-inner { max-width: 1000px; margin: 0 auto; padding: .55rem 1rem; display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; }
+  .clock { font-family: var(--font-mono); font-weight: 700; font-size: 1.7rem; color: var(--guinda); min-width: 4.6rem; line-height: 1; }
+  .clock.warn { color: #C0392B; }
+  .clock small { display: block; font-family: var(--font-ui); font-size: .6rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-muted); margin-top: .15rem; }
+  .chips { display: flex; gap: .35rem; flex: 1; min-width: 260px; }
+  .chip-b {
+    flex: 1; text-align: center; text-decoration: none; background: var(--off-white); border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-md); padding: .28rem .2rem; font-family: var(--font-ui); font-size: .68rem; line-height: 1.2; color: var(--ink-secondary);
+  }
+  .chip-b b { display: block; font-size: .8rem; color: var(--guinda); }
+  .chip-b:hover { background: var(--guinda-light); text-decoration: none; }
+  .chip-b.on { background: var(--guinda); border-color: var(--guinda); color: #fff; }
+  .chip-b.on b { color: #fff; }
+  .chip-b.done { opacity: .55; }
+  .tbtns { display: flex; gap: .4rem; align-items: center; }
+  .autoscroll { font-family: var(--font-ui); font-size: .68rem; color: var(--ink-secondary); display: flex; gap: .25rem; align-items: center; }
+  @media (max-width: 700px) { .chip-b span { display: none; } .chips { min-width: 0; } }
+
+  .btn {
+    font-family: var(--font-ui); font-size: .82rem; font-weight: 600; cursor: pointer;
+    border: 1.5px solid var(--guinda); background: var(--guinda); color: #fff;
+    padding: .5rem 1rem; border-radius: var(--radius-md); transition: background .15s, color .15s;
+  }
+  .btn:hover { background: var(--guinda-dark); }
+  .btn.ghost { background: #fff; color: var(--guinda); }
+  .btn.ghost:hover { background: var(--guinda-light); }
+  .btn.sm { padding: .35rem .75rem; font-size: .76rem; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn:focus-visible, .tabbtn:focus-visible, .opt:focus-visible, .er-num:focus-visible, .gnode:focus-visible, .chip-b:focus-visible { outline: 3px solid var(--guinda-rule); outline-offset: 2px; }
+  .btn-row { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .9rem; align-items: center; }
+
+  /* ---------- Encabezado de bloque ---------- */
+  .blk-head { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.1rem; padding-bottom: .7rem; border-bottom: 1.5px solid var(--guinda-rule); }
+  .blk-n {
+    flex-shrink: 0; width: 3rem; height: 3rem; border-radius: 50%; background: var(--guinda); color: #fff; display: flex;
+    align-items: center; justify-content: center; font-family: var(--font-display); font-size: 1.7rem; font-weight: 700;
+  }
+  .blk-head h2 { margin: 0; color: var(--guinda); font-size: 1.55rem; }
+  .blk-time { font-family: var(--font-ui); font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--guinda-mid); display: block; margin-bottom: .1rem; }
+  .section { scroll-margin-top: 90px; }
+  .page-wrapper h3 { margin-top: 1.4rem; }
+
+  details.notes { border: 1px dashed var(--border-strong); border-radius: var(--radius-md); background: #FFFDF7; margin: 1.1rem 0; }
+  details.notes summary { cursor: pointer; padding: .55rem .9rem; font-family: var(--font-ui); font-size: .8rem; font-weight: 700; color: var(--guinda-mid); }
+  details.notes div { padding: 0 1rem .8rem; font-size: .92rem; }
+  details.notes p { margin-bottom: .45rem; }
+
+  /* ---------- Leyenda IDA / VUELTA ---------- */
+  .legend { display: flex; gap: 1.2rem; flex-wrap: wrap; font-family: var(--font-ui); font-size: .8rem; margin: .6rem 0 .3rem; }
+  .legend span { display: inline-flex; align-items: center; gap: .4rem; }
+  .legend i { display: inline-block; width: 26px; height: 5px; border-radius: 3px; }
+  .legend .i-ida { background: var(--ida); } .legend .i-vue { background: var(--vuelta); }
+  .tag-ida, .tag-vue { font-family: var(--font-ui); font-weight: 700; font-size: .68rem; letter-spacing: .08em; padding: .12rem .55rem; border-radius: 999px; color: #fff; }
+  .tag-ida { background: var(--ida); } .tag-vue { background: var(--vuelta); }
+
+  /* ---------- Diagrama ER ---------- */
+  .er-wrap { background: var(--off-white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: .5rem .5rem .2rem; }
+  .er-wrap svg { width: 100%; height: auto; display: block; }
+  .er-box { fill: #fff; stroke: var(--guinda); stroke-width: 2.5; }
+  .er-name { font-family: var(--font-ui); font-size: 16px; font-weight: 700; fill: var(--guinda); text-anchor: middle; }
+  .er-line { stroke: var(--guinda-rule); stroke-width: 3; }
+  .er-num circle.bg { fill: #fff; stroke: var(--ink-secondary); stroke-width: 2.2; }
+  .er-num text { font-family: var(--font-ui); font-size: 20px; font-weight: 700; fill: var(--ink); text-anchor: middle; pointer-events: none; }
+  .er-num.unk circle.bg { stroke-dasharray: 4 3; fill: #FFFDF7; }
+  .er-num.unk text { fill: var(--ink-muted); }
+  .er-num[data-end] { cursor: pointer; }
+  .er-num[data-end]:hover circle.bg { fill: var(--guinda-light); }
+  .er-num.ok circle.bg { stroke: #3E9B52; stroke-width: 3.5; fill: #EAF5EC; }
+  .er-num.no circle.bg { stroke: #B3261E; stroke-width: 3.5; fill: #FDECEA; }
+  .er-ring { fill: none; stroke-width: 4; opacity: 0; }
+  .er-ring.on { opacity: 1; }
+  .er-arrow { fill: none; stroke-width: 3.5; transition: opacity .2s; }
+  .er-lbl { font-family: var(--font-ui); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-anchor: middle; paint-order: stroke; stroke: #FAFAFA; stroke-width: 5px; stroke-linejoin: round; }
+
+  .read-boxes { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin: .8rem 0; }
+  @media (max-width: 700px) { .read-boxes { grid-template-columns: 1fr; } }
+  .rb { border-radius: var(--radius-md); padding: .75rem .95rem; font-size: .95rem; border: 1px solid var(--border); background: #fff; transition: opacity .2s, box-shadow .2s; }
+  .rb.ida { border-left: 6px solid var(--ida); } .rb.vue { border-left: 6px solid var(--vuelta); }
+  .rb b { font-family: var(--font-ui); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; display: block; margin-bottom: .15rem; }
+  .rb.ida b { color: var(--ida); } .rb.vue b { color: var(--vuelta); }
+  .rb.dim { opacity: .35; }
+  .rb .far { font-family: var(--font-ui); font-size: .78rem; color: var(--ink-secondary); margin-top: .3rem; display: block; }
+
+  /* ---------- Pasos ---------- */
+  .steps3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin: 1.1rem 0; }
+  @media (max-width: 760px) { .steps3 { grid-template-columns: 1fr; } }
+  .st3 { background: #fff; border: 1px solid var(--border); border-top: 4px solid var(--guinda); border-radius: var(--radius-md); padding: .9rem 1rem; box-shadow: var(--shadow-sm); }
+  .st3 .n { display: inline-flex; width: 1.7rem; height: 1.7rem; border-radius: 50%; background: var(--guinda); color: #fff; align-items: center; justify-content: center; font-family: var(--font-ui); font-weight: 700; font-size: .85rem; margin-bottom: .35rem; }
+  .st3 h4 { margin-bottom: .25rem; color: var(--guinda-dark); font-size: 1rem; }
+  .st3 p { font-size: .9rem; margin: 0; color: var(--ink-secondary); }
+
+  .big-rule {
+    border: 3px solid var(--guinda); border-radius: var(--radius-lg); padding: 1rem 1.3rem; background: var(--ida-soft);
+    margin: 1.3rem 0; text-align: center;
+  }
+  .big-rule b { font-family: var(--font-ui); font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; color: var(--guinda-mid); display: block; margin-bottom: .3rem; }
+  .big-rule p { font-family: var(--font-display); font-size: 1.45rem; line-height: 1.3; margin: 0; color: var(--guinda); font-weight: 600; }
+
+  /* ---------- Laboratorios ---------- */
+  .lab { border: 2px solid var(--guinda); border-radius: var(--radius-lg); background: #fff; margin: 1.5rem 0; overflow: hidden; box-shadow: var(--shadow-md); }
+  .lab-head { background: var(--guinda); color: #fff; padding: .65rem 1.2rem; display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; font-family: var(--font-ui); }
+  .lab-head .tag { font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; background: rgba(255,255,255,.2); padding: .18rem .65rem; border-radius: 999px; }
+  .lab-head h3 { margin: 0; color: #fff; font-family: var(--font-ui); font-size: 1rem; font-weight: 600; }
+  .lab-body { padding: 1.1rem 1.3rem 1.3rem; }
+  .lab-intro { font-size: .95rem; margin-bottom: .8rem; }
+  .tabrow { display: flex; flex-wrap: wrap; gap: .45rem; margin-bottom: .9rem; }
+  .tabbtn { font-family: var(--font-ui); font-size: .78rem; font-weight: 600; cursor: pointer; background: var(--off-white); color: var(--ink-secondary); border: 1.5px solid var(--border-strong); padding: .4rem .85rem; border-radius: 999px; }
+  .tabbtn[aria-selected="true"], .tabbtn.on { background: var(--guinda); color: #fff; border-color: var(--guinda); }
+  .modes { display: flex; gap: .5rem; flex-wrap: wrap; margin: .7rem 0 .2rem; }
+  .mbtn { font-family: var(--font-ui); font-weight: 700; font-size: .8rem; cursor: pointer; border-radius: var(--radius-md); padding: .45rem .9rem; border: 2px solid; background: #fff; }
+  .mbtn.m-ida { color: var(--ida); border-color: var(--ida); } .mbtn.m-ida.on { background: var(--ida); color: #fff; }
+  .mbtn.m-vue { color: var(--vuelta); border-color: var(--vuelta); } .mbtn.m-vue.on { background: var(--vuelta); color: #fff; }
+  .mbtn.m-both { color: var(--ink-secondary); border-color: var(--border-strong); } .mbtn.m-both.on { background: var(--ink-secondary); color: #fff; }
+
+  .g-stage { background: var(--off-white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: .3rem; margin-top: .6rem; }
+  .g-stage svg { width: 100%; height: auto; display: block; }
+  .gnode { cursor: pointer; }
+  .gnode rect { fill: #fff; stroke: var(--border-strong); stroke-width: 1.5; transition: fill .15s; }
+  .gnode:hover rect { fill: var(--guinda-light); }
+  .gnode.sel rect { stroke-width: 3.5; fill: #fff; }
+  .gnode.near rect { stroke-width: 3; fill: #FFFDF7; }
+  .gnode text { font-family: var(--font-ui); font-size: 14px; fill: var(--ink); pointer-events: none; }
+  .glink { fill: none; stroke: #CDBFC4; stroke-width: 2; transition: stroke .2s; }
+  .gcol { font-family: var(--font-ui); font-size: 12px; font-weight: 700; letter-spacing: .1em; fill: var(--guinda-mid); text-anchor: middle; }
+  .gmsg { margin-top: .6rem; padding: .65rem .95rem; border-radius: var(--radius-md); background: var(--off-white); border: 1px solid var(--border); font-size: .93rem; min-height: 2.6rem; }
+  .stats2 { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; margin-top: .7rem; }
+  @media (max-width: 700px) { .stats2 { grid-template-columns: 1fr; } }
+  .stat { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: .65rem .9rem; font-family: var(--font-ui); font-size: .78rem; color: var(--ink-secondary); }
+  .stat.ida { border-left: 6px solid var(--ida); } .stat.vue { border-left: 6px solid var(--vuelta); }
+  .stat b { display: block; font-size: 1.35rem; color: var(--ink); line-height: 1.2; }
+
+  /* ---------- Matriz 2x2 ---------- */
+  .mx-wrap { margin: 1.2rem 0; overflow-x: auto; }
+  .mx { display: grid; grid-template-columns: 120px 1fr 1fr; gap: .5rem; min-width: 640px; }
+  .mx-h { font-family: var(--font-ui); font-size: .78rem; font-weight: 700; padding: .6rem .7rem; border-radius: var(--radius-md); color: #fff; display: flex; flex-direction: column; justify-content: center; }
+  .mx-h small { font-weight: 500; font-size: .7rem; opacity: .95; }
+  .mx-h.col { background: var(--vuelta); } .mx-h.row { background: var(--ida); } .mx-h.corner { background: transparent; }
+  .mx-cell { background: #fff; border: 2px solid var(--border); border-radius: var(--radius-md); padding: .7rem .8rem; transition: border-color .2s, background .2s, box-shadow .2s; }
+  .mx-cell .type { font-family: var(--font-ui); font-weight: 700; font-size: 1.3rem; color: var(--guinda); }
+  .mx-cell .nm { font-family: var(--font-ui); font-size: .72rem; color: var(--ink-secondary); margin-left: .4rem; font-weight: 600; }
+  .mx-cell p { font-size: .85rem; margin: .25rem 0 0; color: var(--ink-secondary); }
+  .mx-cell svg { width: 100%; max-width: 200px; display: block; margin-top: .3rem; }
+  .mx-cell.hot { border-color: var(--guinda); background: var(--ida-soft); box-shadow: 0 0 0 3px rgba(73,11,88,.18); }
+
+  /* ---------- Banco de ejemplos ---------- */
+  .ex-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; }
+  @media (max-width: 900px) { .ex-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .ex-grid { grid-template-columns: 1fr; } }
+  .exc { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: .8rem .9rem; box-shadow: var(--shadow-sm); }
+  .exc .ttl { font-family: var(--font-ui); font-weight: 700; font-size: .82rem; color: var(--guinda); margin-bottom: .45rem; display: flex; justify-content: space-between; gap: .4rem; align-items: center; }
+  .exc .ttl em { font-style: normal; font-size: .72rem; background: var(--guinda-light); padding: .08rem .5rem; border-radius: 999px; }
+  .exc p { font-size: .84rem; margin: .25rem 0; padding-left: .6rem; border-left: 4px solid; line-height: 1.35; }
+  .exc p.i { border-color: var(--ida); } .exc p.v { border-color: var(--vuelta); }
+  .exc p b { font-family: var(--font-ui); font-size: .62rem; letter-spacing: .08em; display: block; }
+  .exc p.i b { color: var(--ida); } .exc p.v b { color: var(--vuelta); }
+
+  /* ---------- Errores típicos ---------- */
+  .err-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin: 1rem 0; }
+  @media (max-width: 760px) { .err-grid { grid-template-columns: 1fr; } }
+  .err { border-radius: var(--radius-md); border: 1px solid var(--border); background: #fff; overflow: hidden; display: flex; flex-direction: column; }
+  .err .good { flex: 1; }
+  .err .bad { background: #FDECEA; color: var(--bad); padding: .5rem .85rem; font-size: .88rem; }
+  .err .good { background: #EAF5EC; color: var(--ok); padding: .5rem .85rem; font-size: .88rem; }
+  .err b { font-family: var(--font-ui); font-size: .66rem; letter-spacing: .09em; text-transform: uppercase; display: block; }
+
+  /* ---------- Reto de etiquetado ---------- */
+  .cases { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .8rem; }
+  .cn { width: 2.1rem; height: 2.1rem; border-radius: 50%; border: 2px solid var(--border-strong); background: #fff; font-family: var(--font-ui); font-weight: 700; cursor: pointer; color: var(--ink-secondary); }
+  .cn.on { background: var(--guinda); color: #fff; border-color: var(--guinda); }
+  .cn.done { border-color: #3E9B52; color: #1F5B2B; }
+  .cn.done.on { background: #3E9B52; color: #fff; }
+  .fb { margin-top: .8rem; padding: .8rem 1rem; border-radius: var(--radius-md); font-size: .93rem; }
+  .fb.ok { background: #EAF5EC; border: 1px solid #A9D3B0; color: var(--ok); }
+  .fb.no { background: #FDECEA; border: 1px solid #E8B4AF; color: var(--bad); }
+  .fb.info { background: var(--off-white); border: 1px solid var(--border); color: var(--ink-secondary); }
+  .fb p { margin: .15rem 0; font-size: .92rem; }
+  .fb b { font-family: var(--font-ui); }
+  .hint-line { font-family: var(--font-ui); font-size: .8rem; color: var(--ink-secondary); margin: .4rem 0; }
+
+  /* ---------- Quiz de lectura ---------- */
+  .qz-top { display: flex; justify-content: space-between; font-family: var(--font-ui); font-size: .8rem; color: var(--ink-secondary); margin-bottom: .45rem; }
+  .qz-bar { height: 8px; background: var(--border); border-radius: 999px; overflow: hidden; margin-bottom: .9rem; }
+  .qz-bar i { display: block; height: 100%; background: var(--guinda); transition: width .3s; }
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin-top: .8rem; }
+  @media (max-width: 700px) { .opts { grid-template-columns: 1fr; } }
+  .opt { text-align: left; cursor: pointer; font-family: var(--font-ui); background: #fff; border: 1.5px solid var(--border-strong); border-radius: var(--radius-md); padding: .6rem .8rem; font-size: .84rem; color: var(--ink); }
+  .opt .l { display: block; font-size: .82rem; line-height: 1.4; }
+  .opt .l.i { color: var(--ida); } .opt .l.v { color: var(--vuelta); }
+  .opt .l b { font-size: .64rem; letter-spacing: .08em; margin-right: .3rem; }
+  .opt:hover:not(:disabled) { background: var(--guinda-light); border-color: var(--guinda); }
+  .opt.right { background: #EAF5EC; border-color: #4C9A5B; }
+  .opt.wrong { background: #FDECEA; border-color: #B3261E; }
+  .opt:disabled { cursor: default; }
+  .qz-end { text-align: center; padding: .8rem .5rem; }
+  .qz-end .score { font-family: var(--font-display); font-size: 3rem; color: var(--guinda); line-height: 1.1; }
+
+  /* ---------- Tarjeta de bolsillo y cierre ---------- */
+  .pocket { border: 3px solid var(--guinda); border-radius: var(--radius-lg); background: #fff; padding: 1.1rem 1.3rem; margin: 1.3rem 0; box-shadow: var(--shadow-md); }
+  .pocket h3 { margin: 0 0 .6rem; color: var(--guinda); font-size: 1.2rem; }
+  .pocket ol { margin-bottom: .6rem; }
+  .pocket li { margin-bottom: .35rem; }
+  .pocket .mini2 { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; margin-top: .6rem; font-family: var(--font-ui); font-size: .78rem; }
+  @media (max-width: 640px) { .pocket .mini2 { grid-template-columns: repeat(2, 1fr); } }
+  .pocket .mini2 div { background: var(--ida-soft); border-radius: var(--radius-md); padding: .5rem .6rem; text-align: center; }
+  .pocket .mini2 b { display: block; color: var(--guinda); font-size: 1rem; }
+  .daily3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin: 1rem 0; }
+  @media (max-width: 760px) { .daily3 { grid-template-columns: 1fr; } }
+  .dq { background: var(--off-white); border: 1px solid var(--border); border-top: 4px solid var(--guinda-rule); border-radius: var(--radius-md); padding: .85rem 1rem; }
+  .dq h4 { color: var(--guinda-dark); font-size: .95rem; margin-bottom: .25rem; }
+  .dq p { font-size: .88rem; margin: 0; color: var(--ink-secondary); }
+  .scrum-box { border-left: 4px solid var(--guinda); background: #FFFDF7; padding: .8rem 1.1rem; border-radius: 0 var(--radius-md) var(--radius-md) 0; font-size: .94rem; margin: 1rem 0; }
+  @media (max-width: 640px) {
+    .er-wrap { overflow-x: auto; }
+    .er-wrap svg { min-width: 560px; }
+    #rt-mx { min-width: 0 !important; grid-template-columns: 78px 1fr 1fr; }
+    #rt-mx .mx-h { font-size: .68rem; padding: .45rem .5rem; }
+    #rt-mx .mx-cell { padding: .5rem; }
+    .lab-body { padding: 1rem .9rem 1.1rem; }
+  }
+  @media print { .daily-bar { display: none; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo-wrap"><img src="imagen1.png" alt="Logotipo IEDEP"></div>
+  <div class="header-text">
+    <span class="inst-name">Instituto de Educación Digital del Estado de Puebla</span>
+    <span class="doc-title">Daily Scrum · Licenciatura en Sistemas Computacionales</span>
+  </div>
+</header>
+
+<section class="class-hero">
+  <span class="class-label">Daily Scrum 1 · Refuerzo de la Unidad 2</span>
+  <h1>Cardinalidad: dos extremos, dos preguntas</h1>
+  <span class="class-subtitle">Una daily de 15 minutos para dominar de una vez la lectura de la cardinalidad en ambos sentidos</span>
+  <div class="meta-row">
+    <div class="meta-item">Programa educativo<span>Lic. en Sistemas Computacionales</span></div>
+    <div class="meta-item">Asignatura<span>Bases de Datos I</span></div>
+    <div class="meta-item">Unidad<span>2 · Modelado de Datos (refuerzo)</span></div>
+    <div class="meta-item">Tema<span>2.2 Cardinalidad de las relaciones</span></div>
+    <div class="meta-item">Duración<span>15 minutos</span></div>
+    <div class="meta-item">Fecha<span>Lunes 12 de octubre de 2026</span></div>
+  </div>
+</section>
+
+<!-- BARRA DEL CRONÓMETRO -->
+<div class="daily-bar" role="region" aria-label="Cronómetro de la daily">
+  <div class="daily-inner">
+    <div class="clock" id="clock" aria-live="off">15:00<small id="clock-lbl">Tiempo restante</small></div>
+    <nav class="chips" aria-label="Bloques de la daily" id="chips">
+      <a class="chip-b" href="#b1" data-b="0"><b>1</b><span>0:00 · Gancho</span></a>
+      <a class="chip-b" href="#b2" data-b="1"><b>2</b><span>1:30 · Idea clave</span></a>
+      <a class="chip-b" href="#b3" data-b="2"><b>3</b><span>5:00 · Matriz y ejemplos</span></a>
+      <a class="chip-b" href="#b4" data-b="3"><b>4</b><span>8:00 · Reto</span></a>
+      <a class="chip-b" href="#b5" data-b="4"><b>5</b><span>11:30 · Lectura</span></a>
+      <a class="chip-b" href="#b6" data-b="5"><b>6</b><span>14:00 · Cierre</span></a>
+    </nav>
+    <div class="tbtns">
+      <button class="btn sm" id="t-go" type="button">Iniciar</button>
+      <button class="btn sm ghost" id="t-reset" type="button">Reiniciar</button>
+      <label class="autoscroll"><input type="checkbox" id="t-auto"> Ir al bloque</label>
+    </div>
+  </div>
+</div>
+
+<main class="page-wrapper">
+
+  <!-- COMPETENCIAS -->
+  <section class="section" style="margin-top:2rem;">
+    <h2 class="section-title">Competencias a desarrollar</h2>
+    <div class="competency-card">
+      <span class="comp-num">01</span>
+      <span class="comp-text"><strong>Determinar</strong> la cardinalidad de una relación leyéndola en sus dos sentidos (ida y vuelta) y registrando cada resultado en el extremo correcto del diagrama.</span>
+    </div>
+    <div class="competency-card">
+      <span class="comp-num">02</span>
+      <span class="comp-text"><strong>Interpretar</strong> un diagrama entidad-relación traduciendo cada extremo a un enunciado de negocio, sin invertir los sentidos.</span>
+    </div>
+  </section>
+
+  <!-- INTRO -->
+  <section class="section">
+    <div class="card mixtle-card">
+      <img src="imagen2.png" alt="Mixtle, guía de la daily">
+      <div>
+        <span class="card-title">Hola, soy Mixtle</span>
+        <p>Hoy tenemos un solo tema y quince minutos. Lo que más cuesta de la cardinalidad no son los tipos (1:1, 1:N y N:M), sino entender que <strong>cada relación se lee en dos sentidos y cada sentido tiene su propio número, en su propio extremo de la línea</strong>. Eso es lo que vamos a aterrizar.</p>
+      </div>
+    </div>
+    <div class="scrum-box"><strong>Formato daily:</strong> igual que en Scrum, la daily es un evento de <strong>15 minutos</strong> con tiempo fijo. Aquí cada bloque tiene su reloj. Al final, tres preguntas rápidas: qué me llevo, qué sigue confuso y qué me impide avanzar.</div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ BLOQUE 1 ============ -->
+  <section class="section" id="b1">
+    <div class="blk-head"><span class="blk-n">1</span><div><span class="blk-time">0:00 – 1:30 · 1 min 30 s</span><h2>El gancho: una línea, dos verdades</h2></div></div>
+
+    <p>Mira este diagrama durante diez segundos. Sin hablar, decide cuál de las dos frases de abajo es verdadera.</p>
+    <div class="er-wrap"><svg id="er-hook" viewBox="0 0 640 215" role="img" aria-label="Diagrama: DOCENTE con 1 y GRUPO con N"></svg></div>
+
+    <div class="read-boxes">
+      <div class="rb" style="border-left:6px solid var(--guinda-rule);"><b style="color:var(--guinda-mid);">Frase A</b>Un docente puede ser titular de varios grupos.</div>
+      <div class="rb" style="border-left:6px solid var(--guinda-rule);"><b style="color:var(--guinda-mid);">Frase B</b>Un grupo puede tener varios docentes titulares.</div>
+    </div>
+    <details class="notes" style="background:#fff;border-style:solid;border-color:var(--guinda);">
+      <summary>Mostrar respuesta</summary>
+      <div><p>Solo la <strong>frase A</strong> es verdadera, y esa es justo la trampa: <strong>el diagrama dice las dos cosas a la vez</strong>. Dice que un docente llega a muchos grupos (ida) y también que un grupo llega a un solo docente (vuelta). Quien lee solo un sentido contesta bien una frase y se equivoca en la otra.</p></div>
+    </details>
+
+    <div class="callout">
+      <p><strong>Lo que lograrás hoy:</strong> (1) escribir las dos preguntas de cualquier relación, (2) colocar cada número en su extremo sin invertirlos y (3) leer un diagrama ajeno sin equivocarte de sentido.</p>
+    </div>
+
+    <details class="notes">
+      <summary>Notas del facilitador · bloque 1 (1 min 30 s)</summary>
+      <div>
+        <p>Proyecta el diagrama y pide mano alzada para A y para B antes de revelar. Es normal que una parte del grupo vote B: lee el "1" junto a DOCENTE como "un docente, un grupo".</p>
+        <p>No expliques todavía el porqué. Cierra el bloque con: "hoy vamos a aprender a leer los dos sentidos y a no confundir cuál número va dónde".</p>
+      </div>
+    </details>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ BLOQUE 2 ============ -->
+  <section class="section" id="b2">
+    <div class="blk-head"><span class="blk-n">2</span><div><span class="blk-time">1:30 – 5:00 · 3 min 30 s</span><h2>Idea clave: cada extremo responde una pregunta distinta</h2></div></div>
+
+    <p>La cardinalidad de una relación entre A y B no es un dato único, son <strong>dos datos</strong>: uno por cada sentido. Y cada dato se escribe en un extremo distinto de la línea.</p>
+
+    <div class="legend">
+      <span><i class="i-ida"></i><span><strong>IDA:</strong> parto de A y miro hacia B</span></span>
+      <span><i class="i-vue"></i><span><strong>VUELTA:</strong> parto de B y miro hacia A</span></span>
+    </div>
+
+    <div class="er-wrap"><svg id="er-key" viewBox="0 0 640 215" role="img" aria-label="DOCENTE 1, GRUPO N con las lecturas de ida y vuelta"></svg></div>
+    <div class="read-boxes">
+      <div class="rb ida"><b>Ida · pregunta</b>Si parto de <strong>UN docente</strong>, ¿con cuántos grupos puede relacionarse, <em>como máximo</em>?<span class="far">Respuesta: <strong>N</strong> (varios). Se anota junto a GRUPO.</span></div>
+      <div class="rb vue"><b>Vuelta · pregunta</b>Si parto de <strong>UN grupo</strong>, ¿con cuántos docentes puede relacionarse, <em>como máximo</em>?<span class="far">Respuesta: <strong>1</strong> (uno solo). Se anota junto a DOCENTE.</span></div>
+    </div>
+
+    <div class="big-rule">
+      <b>La regla del número lejano</b>
+      <p>El número que responde "¿cuántos B por cada A?" se escribe junto a B, el extremo lejano. Siempre se cruza.</p>
+    </div>
+
+    <div class="mixtle-tip">
+      <img src="imagen2.png" alt="Mixtle">
+      <div class="callout" style="margin:0; flex:1;">
+        <p><strong>Analogía de Mixtle: la calle de doble sentido.</strong> En una calle con dos sentidos, el letrero que ves <em>al final del tramo</em> aplica al tráfico que va hacia allá. El letrero de la ida no dice nada de la vuelta, y cada sentido tiene el suyo. La línea de una relación es esa calle: los números son letreros al final de cada tramo, uno por sentido.</p>
+      </div>
+    </div>
+
+    <h3>Los tres pasos, siempre en este orden</h3>
+    <div class="steps3">
+      <div class="st3"><span class="n">1</span><h4>Escribe la pregunta</h4><p>"Si parto de UN A, ¿con cuántos B puede relacionarse?" Y después la inversa, partiendo de B.</p></div>
+      <div class="st3"><span class="n">2</span><h4>Responde con "máximo"</h4><p>Solo hay dos respuestas posibles: <strong>1</strong> o <strong>N</strong>. Cuenta lo que la regla permite, no lo que hay hoy.</p></div>
+      <div class="st3"><span class="n">3</span><h4>Cruza el número</h4><p>La respuesta de la ida va junto a B; la de la vuelta va junto a A. Cada extremo se decide por separado.</p></div>
+    </div>
+
+    <!-- LAB 1: LUPA -->
+    <div class="lab" id="lab-lupa">
+      <div class="lab-head"><span class="tag">Laboratorio 1</span><h3>La lupa de los dos sentidos</h3></div>
+      <div class="lab-body">
+        <p class="lab-intro">Elige un ejemplo. Toca un elemento de cualquier lado y verás con quién se relaciona. Después activa IDA o VUELTA y observa qué número del diagrama responde esa lectura.</p>
+        <div class="tabrow" role="tablist" aria-label="Ejemplos de la lupa" id="lp-tabs"></div>
+        <div class="er-wrap"><svg id="lp-er" viewBox="0 0 640 215" role="img" aria-label="Diagrama entidad-relación del ejemplo"></svg></div>
+        <div class="modes" id="lp-modes">
+          <button class="mbtn m-ida" type="button" data-m="ida">Leer la IDA</button>
+          <button class="mbtn m-vue" type="button" data-m="vuelta">Leer la VUELTA</button>
+          <button class="mbtn m-both on" type="button" data-m="both">Ver las dos</button>
+        </div>
+        <div class="read-boxes" id="lp-read"></div>
+        <div class="g-stage"><svg id="lp-g" viewBox="0 0 640 260" role="group" aria-label="Elementos de cada entidad y sus conexiones"></svg></div>
+        <div class="gmsg" id="lp-msg" aria-live="polite">Toca un elemento para ver sus conexiones.</div>
+        <div class="stats2" id="lp-stats"></div>
+      </div>
+    </div>
+
+    <details class="notes">
+      <summary>Notas del facilitador · bloque 2 (3 min 30 s)</summary>
+      <div>
+        <p><strong>Minuto 1:</strong> lee las dos preguntas del diagrama en voz alta, señalando con el dedo el recorrido: sales de DOCENTE, llegas a GRUPO, miras el número que está en GRUPO.</p>
+        <p><strong>Minuto 2:</strong> la regla del número lejano. Pide que la repitan: "el número de la ida va junto al lejano".</p>
+        <p><strong>Minutos 3 y 4:</strong> Laboratorio 1 con el ejemplo Docente &ndash; Grupo y después Estudiante &ndash; Materia. Pide que un alumno toque un docente y diga cuántos grupos tiene, y luego que toque un grupo y diga cuántos docentes. El contraste 2 frente a 1 es el momento clave.</p>
+      </div>
+    </details>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ BLOQUE 3 ============ -->
+  <section class="section" id="b3">
+    <div class="blk-head"><span class="blk-n">3</span><div><span class="blk-time">5:00 – 8:00 · 3 min</span><h2>La matriz 2×2 y el banco de ejemplos</h2></div></div>
+
+    <p>Como cada sentido tiene solo dos respuestas posibles (1 o N), toda relación cae en una de <strong>cuatro combinaciones</strong>. Esta matriz es la forma más rápida de ver que el resultado depende de <em>ambos</em> sentidos a la vez.</p>
+
+    <div class="mx-wrap">
+      <div class="mx" id="mx">
+        <div class="mx-h corner"></div>
+        <div class="mx-h col">VUELTA: un B, ¿cuántos A?<small>Número junto a A = 1</small></div>
+        <div class="mx-h col">VUELTA: un B, ¿cuántos A?<small>Número junto a A = N</small></div>
+
+        <div class="mx-h row">IDA: un A, ¿cuántos B?<small>Número junto a B = 1</small></div>
+        <div class="mx-cell" data-c="1:1"><span class="type">1:1</span><span class="nm">uno a uno</span>
+          <svg viewBox="0 0 200 54" aria-hidden="true"><g stroke="var(--guinda-rule)" stroke-width="2"><line x1="25" y1="12" x2="175" y2="12"/><line x1="25" y1="42" x2="175" y2="42"/></g><g fill="var(--guinda)"><circle cx="25" cy="12" r="7"/><circle cx="25" cy="42" r="7"/></g><g fill="var(--guinda-mid)"><circle cx="175" cy="12" r="7"/><circle cx="175" cy="42" r="7"/></g></svg>
+          <p>Persona &ndash; CURP</p></div>
+        <div class="mx-cell" data-c="N:1"><span class="type">N:1</span><span class="nm">muchos a uno</span>
+          <svg viewBox="0 0 200 54" aria-hidden="true"><g stroke="var(--guinda-rule)" stroke-width="2"><line x1="25" y1="8" x2="175" y2="27"/><line x1="25" y1="27" x2="175" y2="27"/><line x1="25" y1="46" x2="175" y2="27"/></g><g fill="var(--guinda)"><circle cx="25" cy="8" r="7"/><circle cx="25" cy="27" r="7"/><circle cx="25" cy="46" r="7"/></g><g fill="var(--guinda-mid)"><circle cx="175" cy="27" r="7"/></g></svg>
+          <p>Producto &ndash; Categoría</p></div>
+
+        <div class="mx-h row">IDA: un A, ¿cuántos B?<small>Número junto a B = N</small></div>
+        <div class="mx-cell" data-c="1:N"><span class="type">1:N</span><span class="nm">uno a muchos</span>
+          <svg viewBox="0 0 200 54" aria-hidden="true"><g stroke="var(--guinda-rule)" stroke-width="2"><line x1="25" y1="27" x2="175" y2="8"/><line x1="25" y1="27" x2="175" y2="27"/><line x1="25" y1="27" x2="175" y2="46"/></g><g fill="var(--guinda)"><circle cx="25" cy="27" r="7"/></g><g fill="var(--guinda-mid)"><circle cx="175" cy="8" r="7"/><circle cx="175" cy="27" r="7"/><circle cx="175" cy="46" r="7"/></g></svg>
+          <p>Docente &ndash; Grupo</p></div>
+        <div class="mx-cell" data-c="N:M"><span class="type">N:M</span><span class="nm">muchos a muchos</span>
+          <svg viewBox="0 0 200 54" aria-hidden="true"><g stroke="var(--guinda-rule)" stroke-width="2"><line x1="25" y1="12" x2="175" y2="12"/><line x1="25" y1="12" x2="175" y2="42"/><line x1="25" y1="42" x2="175" y2="12"/><line x1="25" y1="42" x2="175" y2="42"/></g><g fill="var(--guinda)"><circle cx="25" cy="12" r="7"/><circle cx="25" cy="42" r="7"/></g><g fill="var(--guinda-mid)"><circle cx="175" cy="12" r="7"/><circle cx="175" cy="42" r="7"/></g></svg>
+          <p>Estudiante &ndash; Materia</p></div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <p><strong>1:N y N:1 son la misma relación vista desde extremos opuestos.</strong> "Docente 1:N Grupo" y "Grupo N:1 Docente" dicen exactamente lo mismo: solo cambia qué entidad nombras primero. No son tipos distintos.</p>
+    </div>
+
+    <h3>Banco de ejemplos</h3>
+    <p>Cada tarjeta trae su <span class="tag-ida">IDA</span> y su <span class="tag-vue">VUELTA</span>. Léelas siempre en pareja: si solo lees una, te falta la mitad de la relación.</p>
+    <div class="tabrow" role="tablist" aria-label="Tipos de ejemplo" id="bx-tabs">
+      <button class="tabbtn" role="tab" aria-selected="true" data-t="11" type="button">1:1 · uno a uno</button>
+      <button class="tabbtn" role="tab" aria-selected="false" data-t="1n" type="button">1:N · uno a muchos</button>
+      <button class="tabbtn" role="tab" aria-selected="false" data-t="nm" type="button">N:M · muchos a muchos</button>
+    </div>
+    <div class="ex-grid" id="bx-grid"></div>
+
+    <h3 style="margin-top:1.6rem;">Cuatro errores típicos</h3>
+    <div class="err-grid">
+      <div class="err"><div class="bad"><b>Error</b>Leer el número del mismo lado donde empiezo: "junto a DOCENTE hay un 1, entonces un docente tiene un grupo".</div><div class="good"><b>Corrección</b>El número de un extremo describe cuántos de esa entidad le tocan a UNO de la otra. Para saber cuántos grupos tiene un docente, mira el extremo de GRUPO.</div></div>
+      <div class="err"><div class="bad"><b>Error</b>Creer que si un lado es N, el otro también lo es.</div><div class="good"><b>Corrección</b>Cada extremo se decide por separado. Docente&ndash;Grupo tiene N de un lado y 1 del otro.</div></div>
+      <div class="err"><div class="bad"><b>Error</b>Decidir la cardinalidad contando los datos de hoy: "este docente solo tiene un grupo, entonces es 1:1".</div><div class="good"><b>Corrección</b>La cardinalidad es una regla de negocio: se responde con "como máximo", no con lo que casualmente existe hoy.</div></div>
+      <div class="err"><div class="bad"><b>Error</b>Pensar que 1:N y N:1 son relaciones diferentes.</div><div class="good"><b>Corrección</b>Son la misma, leída desde el extremo contrario. Lo que importa es que ambos extremos queden bien anotados.</div></div>
+    </div>
+
+    <details class="notes">
+      <summary>Notas del facilitador · bloque 3 (3 min)</summary>
+      <div>
+        <p><strong>Minuto 1:</strong> recorre la matriz señalando filas y columnas. Insiste en que las cuatro celdas salen de combinar las dos respuestas.</p>
+        <p><strong>Minuto 2:</strong> abre el banco en 1:N y lee tres tarjetas completas, ida y vuelta. Después abre N:M y pide que ellos lean la vuelta.</p>
+        <p><strong>Minuto 3:</strong> proyecta el primer error típico, el más frecuente, y deja el resto como lectura posterior.</p>
+      </div>
+    </details>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ BLOQUE 4 ============ -->
+  <section class="section" id="b4">
+    <div class="blk-head"><span class="blk-n">4</span><div><span class="blk-time">8:00 – 11:30 · 3 min 30 s</span><h2>Reto: etiqueta los dos extremos</h2></div></div>
+
+    <div class="lab" id="lab-reto">
+      <div class="lab-head"><span class="tag">Laboratorio 2</span><h3>Coloca el número en cada extremo</h3></div>
+      <div class="lab-body">
+        <p class="lab-intro">Lee las dos frases del caso. Toca cada círculo del diagrama para cambiarlo entre <strong>?</strong>, <strong>1</strong> y <strong>N</strong>. Cuando ambos extremos estén listos, presiona Comprobar.</p>
+        <div class="cases" id="rt-cases" role="tablist" aria-label="Casos del reto"></div>
+        <div class="read-boxes" id="rt-read"></div>
+        <div class="er-wrap"><svg id="rt-er" viewBox="0 0 640 215" role="group" aria-label="Diagrama para etiquetar"></svg></div>
+        <div class="hint-line" id="rt-hint">Recuerda: cada número va en el extremo lejano de la entidad de la que partes.</div>
+        <div class="btn-row">
+          <button class="btn" id="rt-check" type="button">Comprobar</button>
+          <button class="btn ghost" id="rt-next" type="button">Siguiente caso</button>
+          <span class="hint-line" id="rt-score"></span>
+        </div>
+        <div id="rt-fb" aria-live="polite"></div>
+        <p class="hint-line" style="margin-top:1rem;">La combinación que formes se ilumina en la matriz:</p>
+        <div class="mx-wrap"><div class="mx" id="rt-mx" style="min-width:560px;">
+          <div class="mx-h corner"></div><div class="mx-h col">Junto a A = 1</div><div class="mx-h col">Junto a A = N</div>
+          <div class="mx-h row">Junto a B = 1</div><div class="mx-cell" data-c="1:1"><span class="type">1:1</span></div><div class="mx-cell" data-c="N:1"><span class="type">N:1</span></div>
+          <div class="mx-h row">Junto a B = N</div><div class="mx-cell" data-c="1:N"><span class="type">1:N</span></div><div class="mx-cell" data-c="N:M"><span class="type">N:M</span></div>
+        </div></div>
+      </div>
+    </div>
+
+    <details class="notes">
+      <summary>Notas del facilitador · bloque 4 (3 min 30 s)</summary>
+      <div>
+        <p>Resuelvan en grupo los casos 1 y 4 (son los que mejor muestran el cruce y la inversión). Pide a un alumno que se equivoque a propósito en el caso 4 colocando los números sin cruzar: el diagnóstico automático explica el error.</p>
+        <p>Si hay tiempo, los casos 2, 3, 5 y 6 se resuelven en parejas. Pregunta siempre: "¿qué frase te dio ese extremo?".</p>
+      </div>
+    </details>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ BLOQUE 5 ============ -->
+  <section class="section" id="b5">
+    <div class="blk-head"><span class="blk-n">5</span><div><span class="blk-time">11:30 – 14:00 · 2 min 30 s</span><h2>Ahora al revés: lee el diagrama</h2></div></div>
+
+    <div class="lab" id="lab-lectura">
+      <div class="lab-head"><span class="tag">Laboratorio 3</span><h3>¿Qué dice este diagrama?</h3></div>
+      <div class="lab-body">
+        <div id="qz-root"></div>
+      </div>
+    </div>
+
+    <details class="notes">
+      <summary>Notas del facilitador · bloque 5 (2 min 30 s)</summary>
+      <div>
+        <p>Ritmo rápido: 20 a 25 segundos por diagrama. Proyecta el primero y el quinto y sexto en secuencia: son la misma relación con las entidades en distinto orden (Pedido&ndash;Cliente y Cliente&ndash;Pedido). El hecho no cambia, solo la forma de nombrarlo.</p>
+      </div>
+    </details>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ BLOQUE 6 ============ -->
+  <section class="section" id="b6">
+    <div class="blk-head"><span class="blk-n">6</span><div><span class="blk-time">14:00 – 15:00 · 1 min</span><h2>Cierre: tarjeta de bolsillo y daily check-out</h2></div></div>
+
+    <div class="pocket">
+      <h3>Tarjeta de bolsillo: cardinalidad en 3 pasos</h3>
+      <ol>
+        <li><strong>Pregunta ida y vuelta:</strong> "un A, ¿cuántos B?" y "un B, ¿cuántos A?".</li>
+        <li><strong>Responde con máximo:</strong> solo 1 o N, según la regla de negocio.</li>
+        <li><strong>Cruza el número:</strong> la ida va junto a B; la vuelta va junto a A.</li>
+      </ol>
+      <div class="mini2">
+        <div><b>1:1</b>ida 1 · vuelta 1</div>
+        <div><b>1:N</b>ida N · vuelta 1</div>
+        <div><b>N:1</b>ida 1 · vuelta N</div>
+        <div><b>N:M</b>ida N · vuelta N</div>
+      </div>
+    </div>
+
+    <h3>Daily check-out: tres preguntas, treinta segundos cada una</h3>
+    <div class="daily3">
+      <div class="dq"><h4>¿Qué me llevo?</h4><p>Una frase con tus palabras sobre la regla del número lejano.</p></div>
+      <div class="dq"><h4>¿Qué sigue confuso?</h4><p>El tema, el caso o el ejemplo donde todavía dudas.</p></div>
+      <div class="dq"><h4>¿Qué me impide avanzar?</h4><p>Tiempo, herramienta, ejemplo o explicación que te falta.</p></div>
+    </div>
+
+    <div class="mixtle-tip">
+      <img src="imagen2.png" alt="Mixtle">
+      <div class="callout" style="margin:0; flex:1;">
+        <p><strong>Mixtle recuerda:</strong> esto no es memorizar, es un hábito de lectura. Antes de escribir cualquier número en un diagrama, haz siempre las dos preguntas. Con eso, la llave foránea de la próxima clase se vuelve obvia: en una relación 1:N va en el lado del muchos, y una N:M exige una tabla intermedia.</p>
+      </div>
+    </div>
+
+    <h3>Para practicar después</h3>
+    <p>En <code>biblioteca_escolar.db</code> y su archivo <code>consultas_biblioteca_escolar.sql</code>, el <strong>Bloque 10</strong> mide el máximo en cada sentido de relaciones reales (carrera&ndash;usuario, libro&ndash;autor, usuario&ndash;libro). Es la misma pregunta de hoy, resuelta con SQL.</p>
+
+    <details class="notes">
+      <summary>Notas del facilitador · bloque 6 (1 min)</summary>
+      <div>
+        <p>Dos o tres voces rápidas por pregunta, no más. Anota en el pizarrón los "qué sigue confuso" que se repitan: serán el tema de la siguiente daily.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- CONCLUSIÓN -->
+  <section class="section">
+    <h2 class="section-title">Conclusión</h2>
+    <p>La cardinalidad de una relación no es un solo dato sino dos: uno por cada sentido de lectura, anotado en el extremo opuesto de la línea. Para leerla bien basta con repetir tres pasos: preguntar la ida y la vuelta, responder cada una con el máximo permitido (1 o N) y cruzar los números al diagrama. La combinación de ambas respuestas produce los cuatro casos posibles, y 1:N y N:1 son la misma relación vista desde lados contrarios. Con este hábito, interpretar y construir diagramas entidad-relación deja de depender de la memoria.</p>
+  </section>
+
+  <!-- REFERENCIAS -->
+  <section class="section">
+    <h2 class="section-title">Referencias bibliográficas</h2>
+    <ul>
+      <li>Ahijado Sánchez, A. (2022). <em>Bases de datos</em>. McGraw-Hill.</li>
+      <li>Silberschatz, A., Korth, H. F. y Sudarshan, S. (2021). <em>Database system concepts</em> (7.ª ed.). McGraw-Hill.</li>
+      <li>Schwaber, K. y Sutherland, J. (2020). <em>La Guía de Scrum</em>. Scrum Guides. https://scrumguides.org</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <span><strong>IEDEP</strong> · Bases de Datos I — Daily Scrum 1</span>
+  <span>Mtro. José Armando Vera Rodríguez · Lunes 12 de octubre de 2026</span>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var C_IDA = "#490b58", C_VUE = "#B45F06";
+
+  /* ============================================================
+     Dibujo del diagrama ER con dos extremos y dos sentidos
+     o: { id, a, b, endA, endB, mode: both|ida|vuelta, interactive, state:{A:'ok'|'no'} }
+     endA = respuesta de la VUELTA (cuántos A por un B)  -> se escribe junto a A
+     endB = respuesta de la IDA    (cuántos B por un A)  -> se escribe junto a B
+     ============================================================ */
+  function erSvg(o) {
+    var m = o.mode || "both", p = o.id;
+    var idaOp = (m === "vuelta") ? 0.15 : 1, vueOp = (m === "ida") ? 0.15 : 1;
+    var hotB = m === "ida", hotA = m === "vuelta";
+    var s = '<defs>' +
+      '<marker id="' + p + '-mi" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="' + C_IDA + '"/></marker>' +
+      '<marker id="' + p + '-mv" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="' + C_VUE + '"/></marker></defs>';
+    s += '<path class="er-arrow" d="M105,66 C105,0 535,0 535,62" stroke="' + C_IDA + '" marker-end="url(#' + p + '-mi)" opacity="' + idaOp + '"/>';
+    s += '<text class="er-lbl" x="320" y="54" fill="' + C_IDA + '" opacity="' + idaOp + '">IDA  ·  PARTO DE UN ' + o.a + '</text>';
+    s += '<path class="er-arrow" d="M535,134 C535,210 105,210 105,138" stroke="' + C_VUE + '" marker-end="url(#' + p + '-mv)" opacity="' + vueOp + '"/>';
+    s += '<text class="er-lbl" x="320" y="160" fill="' + C_VUE + '" opacity="' + vueOp + '">VUELTA  ·  PARTO DE UN ' + o.b + '</text>';
+    s += '<rect class="er-box" x="20" y="70" width="170" height="64" rx="6"/><text class="er-name" x="105" y="108">' + o.a + '</text>';
+    s += '<rect class="er-box" x="450" y="70" width="170" height="64" rx="6"/><text class="er-name" x="535" y="108">' + o.b + '</text>';
+    s += '<line class="er-line" x1="190" y1="102" x2="450" y2="102"/>';
+    function num(x, v, end, hot, col, st, ariaTxt) {
+      var cls = "er-num" + (v === "?" ? " unk" : "") + (st ? " " + st : "");
+      var at = o.interactive ? ' data-end="' + end + '" role="button" tabindex="0" aria-label="' + ariaTxt + ', valor ' + v + '"' : "";
+      return '<circle class="er-ring' + (hot ? " on" : "") + '" cx="' + x + '" cy="102" r="29" stroke="' + col + '"/>' +
+             '<g class="' + cls + '"' + at + '><circle class="bg" cx="' + x + '" cy="102" r="21"/><text x="' + x + '" y="109">' + v + '</text></g>';
+    }
+    s += num(226, o.endA, "A", hotA, C_VUE, o.state && o.state.A, "Número junto a " + o.a);
+    s += num(414, o.endB, "B", hotB, C_IDA, o.state && o.state.B, "Número junto a " + o.b);
+    return s;
+  }
+  function $(id) { return document.getElementById(id); }
+  function lc(s) { return s.toLowerCase(); }
+
+  document.getElementById("er-hook").innerHTML = erSvg({ id: "h", a: "DOCENTE", b: "GRUPO", endA: "1", endB: "N", mode: "both" });
+  document.getElementById("er-key").innerHTML = erSvg({ id: "k", a: "DOCENTE", b: "GRUPO", endA: "1", endB: "N", mode: "both" });
+
+  /* ============================================================
+     LABORATORIO 1 · Lupa
+     ============================================================ */
+  var LP = [
+    { tab: "Docente y grupo (1:N)", a: "DOCENTE", b: "GRUPO", pa: "docentes", pb: "grupos",
+      A: ["Mtro. Salas", "Mtra. Ruiz", "Mtro. Soto"], B: ["BD1-A", "BD1-B", "PROG-A", "PROG-B"],
+      L: [[0, 0], [0, 1], [1, 2], [2, 3]],
+      ida: "Un docente puede ser titular de varios grupos.", vuelta: "Un grupo tiene un solo docente titular." },
+    { tab: "Persona y CURP (1:1)", a: "PERSONA", b: "CURP", pa: "personas", pb: "CURP",
+      A: ["Ana", "Luis", "Sofía"], B: ["CURP-001", "CURP-002", "CURP-003"],
+      L: [[0, 0], [1, 1], [2, 2]],
+      ida: "Una persona tiene una sola CURP.", vuelta: "Una CURP pertenece a una sola persona." },
+    { tab: "Estudiante y materia (N:M)", a: "ESTUDIANTE", b: "MATERIA", pa: "estudiantes", pb: "materias",
+      A: ["Ana", "Luis", "Sofía"], B: ["Bases de datos", "Programación", "Redes", "Inglés"],
+      L: [[0, 0], [0, 1], [1, 1], [1, 2], [2, 0], [2, 3]],
+      ida: "Un estudiante cursa varias materias.", vuelta: "Una materia la cursan varios estudiantes." },
+    { tab: "Producto y categoría (N:1)", a: "PRODUCTO", b: "CATEGORÍA", pa: "productos", pb: "categorías",
+      A: ["Cuaderno", "Pluma", "Mochila", "Lápiz"], B: ["Papelería", "Accesorios"],
+      L: [[0, 0], [1, 0], [2, 1], [3, 0]],
+      ida: "Un producto pertenece a una sola categoría.", vuelta: "Una categoría reúne varios productos." }
+  ];
+  var lpCur = 0, lpMode = "both", lpSel = null;
+  function lpDeg(ex) {
+    var dA = ex.A.map(function () { return 0; }), dB = ex.B.map(function () { return 0; });
+    ex.L.forEach(function (l) { dA[l[0]]++; dB[l[1]]++; });
+    return { dA: dA, dB: dB, mA: Math.max.apply(null, dA), mB: Math.max.apply(null, dB) };
+  }
+  function lpY(side, i) {
+    var ex = LP[lpCur], n = ex.A.length > ex.B.length ? ex.A.length : ex.B.length, H = n * 58 + 40, len = side === 0 ? ex.A.length : ex.B.length;
+    return (H + 20 - (len - 1) * 58) / 2 + i * 58 - 8;
+  }
+  function lpRender() {
+    var ex = LP[lpCur], d = lpDeg(ex), endA = d.mB > 1 ? "N" : "1", endB = d.mA > 1 ? "N" : "1";
+    // pestañas
+    var t = ""; LP.forEach(function (e, i) { t += '<button type="button" class="tabbtn" role="tab" aria-selected="' + (i === lpCur) + '" data-i="' + i + '">' + e.tab + "</button>"; });
+    $("lp-tabs").innerHTML = t;
+    // diagrama ER
+    $("lp-er").innerHTML = erSvg({ id: "lp", a: ex.a, b: ex.b, endA: endA, endB: endB, mode: lpMode });
+    // frases
+    $("lp-read").innerHTML =
+      '<div class="rb ida' + (lpMode === "vuelta" ? " dim" : "") + '"><b>Ida · de ' + ex.a + " a " + ex.b + "</b>" + ex.ida + '<span class="far">Se responde con el número junto a ' + ex.b + ": <strong>" + endB + "</strong></span></div>" +
+      '<div class="rb vue' + (lpMode === "ida" ? " dim" : "") + '"><b>Vuelta · de ' + ex.b + " a " + ex.a + "</b>" + ex.vuelta + '<span class="far">Se responde con el número junto a ' + ex.a + ": <strong>" + endA + "</strong></span></div>";
+    // grafo
+    var n = Math.max(ex.A.length, ex.B.length), H = n * 58 + 40, g = "";
+    $("lp-g").setAttribute("viewBox", "0 0 640 " + (H + 20));
+    g += '<text class="gcol" x="115" y="16">' + ex.a + '</text><text class="gcol" x="525" y="16">' + ex.b + "</text>";
+    ex.L.forEach(function (l) {
+      var on = lpSel && ((lpSel.side === 0 && lpSel.i === l[0]) || (lpSel.side === 1 && lpSel.i === l[1]));
+      var col = on ? (lpSel.side === 0 ? C_IDA : C_VUE) : null;
+      g += '<path class="glink" style="' + (col ? "stroke:" + col + ";stroke-width:4;" : (lpSel ? "opacity:.35;" : "")) + '" d="M190,' + lpY(0, l[0]) + " C320," + lpY(0, l[0]) + " 320," + lpY(1, l[1]) + " 450," + lpY(1, l[1]) + '"/>';
+    });
+    [0, 1].forEach(function (side) {
+      (side === 0 ? ex.A : ex.B).forEach(function (nm, i) {
+        var x = side === 0 ? 40 : 450, y = lpY(side, i), sel = lpSel && lpSel.side === side && lpSel.i === i, near = false;
+        if (lpSel && lpSel.side !== side) near = ex.L.some(function (l) { return side === 1 ? (l[0] === lpSel.i && l[1] === i) : (l[1] === lpSel.i && l[0] === i); });
+        var col = sel ? (side === 0 ? C_IDA : C_VUE) : (near ? (lpSel.side === 0 ? C_IDA : C_VUE) : null);
+        g += '<g class="gnode' + (sel ? " sel" : "") + (near ? " near" : "") + '" data-side="' + side + '" data-i="' + i + '" role="button" tabindex="0" aria-label="' + nm + '"><rect x="' + x + '" y="' + (y - 19) + '" width="150" height="38" rx="8"' + (col ? ' style="stroke:' + col + '"' : "") + '/><text x="' + (x + 75) + '" y="' + (y + 5) + '" text-anchor="middle">' + nm + "</text></g>";
+      });
+    });
+    $("lp-g").innerHTML = g;
+    // mensaje
+    if (lpSel) {
+      var nm = (lpSel.side === 0 ? ex.A : ex.B)[lpSel.i];
+      var rel = ex.L.filter(function (l) { return lpSel.side === 0 ? l[0] === lpSel.i : l[1] === lpSel.i; }).map(function (l) { return (lpSel.side === 0 ? ex.B : ex.A)[lpSel.side === 0 ? l[1] : l[0]]; });
+      var ent = lpSel.side === 0 ? ex.a : ex.b, oth = lpSel.side === 0 ? ex.pb : ex.pa, othS = lpSel.side === 0 ? ex.b : ex.a, sen = lpSel.side === 0 ? "IDA" : "VUELTA";
+      $("lp-msg").innerHTML = "<strong>" + sen + ":</strong> «" + nm + "» (" + lc(ent) + ") se relaciona con <strong>" + rel.length + "</strong> " + lc(rel.length === 1 ? othS : oth) + ": " + rel.join(", ") + ".";
+    } else { $("lp-msg").textContent = "Toca un elemento para ver sus conexiones."; }
+    // estadísticas
+    $("lp-stats").innerHTML =
+      '<div class="stat ida">IDA · máximo de ' + lc(ex.pb) + " por cada " + lc(ex.a) + "<b>" + d.mA + " &rarr; " + endB + "</b></div>" +
+      '<div class="stat vue">VUELTA · máximo de ' + lc(ex.pa) + " por cada " + lc(ex.b) + "<b>" + d.mB + " &rarr; " + endA + "</b></div>";
+    // modos
+    Array.prototype.forEach.call(document.querySelectorAll("#lp-modes .mbtn"), function (b) { b.classList.toggle("on", b.getAttribute("data-m") === lpMode); });
+  }
+  $("lp-tabs").addEventListener("click", function (e) { var b = e.target.closest(".tabbtn"); if (!b) return; lpCur = +b.getAttribute("data-i"); lpSel = null; lpRender(); });
+  $("lp-modes").addEventListener("click", function (e) { var b = e.target.closest(".mbtn"); if (!b) return; lpMode = b.getAttribute("data-m"); lpRender(); });
+  $("lp-g").addEventListener("click", function (e) {
+    var n = e.target.closest(".gnode"); if (!n) { lpSel = null; lpRender(); return; }
+    var side = +n.getAttribute("data-side"), i = +n.getAttribute("data-i");
+    lpSel = (lpSel && lpSel.side === side && lpSel.i === i) ? null : { side: side, i: i };
+    if (lpSel) lpMode = side === 0 ? "ida" : "vuelta";
+    lpRender();
+  });
+  $("lp-g").addEventListener("keydown", function (e) { if ((e.key === "Enter" || e.key === " ") && e.target.closest(".gnode")) { e.preventDefault(); e.target.closest(".gnode").dispatchEvent(new MouseEvent("click", { bubbles: true })); } });
+  lpRender();
+
+  /* ============================================================
+     Matriz 2x2: resaltar celda
+     ============================================================ */
+  function mxHot(rootId, cell) {
+    Array.prototype.forEach.call(document.querySelectorAll("#" + rootId + " .mx-cell"), function (c) { c.classList.toggle("hot", c.getAttribute("data-c") === cell); });
+  }
+  function combo(endA, endB) { return (endA === "N" && endB === "N") ? "N:M" : endA + ":" + endB; }  // 1:1, 1:N, N:1, N:M
+
+  /* ============================================================
+     Banco de ejemplos
+     ============================================================ */
+  var BX = {
+    "11": [
+      ["PERSONA – CURP", "Una persona tiene una sola CURP.", "Una CURP pertenece a una sola persona."],
+      ["ESTUDIANTE – CREDENCIAL", "Un estudiante recibe una sola credencial.", "Una credencial es de un solo estudiante."],
+      ["PACIENTE – EXPEDIENTE", "Un paciente tiene un solo expediente clínico.", "Un expediente corresponde a un solo paciente."],
+      ["EMPLEADO – COMPUTADORA", "A un empleado se le asigna una computadora.", "Una computadora está asignada a un solo empleado."],
+      ["AUTO – PLACA", "Un auto lleva una sola placa.", "Una placa identifica a un solo auto."],
+      ["PAÍS – CAPITAL", "Un país tiene una capital oficial.", "Una ciudad es capital de un solo país."]
+    ],
+    "1n": [
+      ["DOCENTE – GRUPO", "Un docente es titular de varios grupos.", "Un grupo tiene un solo docente titular."],
+      ["CLIENTE – PEDIDO", "Un cliente realiza muchos pedidos.", "Un pedido lo realiza un solo cliente."],
+      ["CARRERA – ESTUDIANTE", "Una carrera tiene muchos estudiantes.", "Un estudiante pertenece a una sola carrera."],
+      ["DEPARTAMENTO – EMPLEADO", "Un departamento agrupa a varios empleados.", "Un empleado trabaja en un solo departamento."],
+      ["VEHÍCULO – SERVICIO", "Un vehículo recibe muchos servicios en el taller.", "Un servicio se registra para un solo vehículo."],
+      ["CATEGORÍA – PRODUCTO", "Una categoría reúne muchos productos.", "Un producto pertenece a una sola categoría."]
+    ],
+    "nm": [
+      ["ESTUDIANTE – MATERIA", "Un estudiante cursa varias materias.", "Una materia la cursan muchos estudiantes."],
+      ["LIBRO – AUTOR", "Un libro puede tener varios autores.", "Un autor puede escribir varios libros."],
+      ["PEDIDO – PRODUCTO", "Un pedido incluye varios productos.", "Un producto aparece en muchos pedidos."],
+      ["ACTOR – PELÍCULA", "Un actor participa en varias películas.", "Una película tiene varios actores."],
+      ["MÉDICO – PACIENTE", "Un médico atiende a muchos pacientes.", "Un paciente puede ser atendido por varios médicos."],
+      ["USUARIO – LIBRO (préstamo)", "Un usuario pide prestados varios libros.", "Un libro es prestado a varios usuarios con el tiempo."]
+    ]
+  };
+  var BXN = { "11": "1:1", "1n": "1:N", "nm": "N:M" };
+  function bxShow(t) {
+    var h = "";
+    BX[t].forEach(function (c) {
+      h += '<div class="exc"><div class="ttl"><span>' + c[0] + "</span><em>" + BXN[t] + '</em></div><p class="i"><b>IDA</b>' + c[1] + '</p><p class="v"><b>VUELTA</b>' + c[2] + "</p></div>";
+    });
+    $("bx-grid").innerHTML = h;
+    Array.prototype.forEach.call(document.querySelectorAll("#bx-tabs .tabbtn"), function (b) { b.setAttribute("aria-selected", b.getAttribute("data-t") === t ? "true" : "false"); });
+  }
+  $("bx-tabs").addEventListener("click", function (e) { var b = e.target.closest(".tabbtn"); if (b) bxShow(b.getAttribute("data-t")); });
+  bxShow("11");
+
+  /* ============================================================
+     LABORATORIO 2 · Reto de etiquetado
+     ============================================================ */
+  var RT = [
+    { a: "DEPARTAMENTO", b: "EMPLEADO", ida: "Un departamento agrupa a varios empleados.", vuelta: "Un empleado trabaja en un solo departamento.", endA: "1", endB: "N" },
+    { a: "EMPLEADO", b: "COMPUTADORA", ida: "A cada empleado se le asigna una sola computadora.", vuelta: "Cada computadora está asignada a un solo empleado.", endA: "1", endB: "1" },
+    { a: "ALUMNO", b: "MATERIA", ida: "Un alumno se inscribe en varias materias.", vuelta: "Una materia tiene inscritos a muchos alumnos.", endA: "N", endB: "N" },
+    { a: "PRODUCTO", b: "CATEGORÍA", ida: "Un producto pertenece a una sola categoría.", vuelta: "Una categoría reúne muchos productos.", endA: "N", endB: "1" },
+    { a: "CLIENTE", b: "PEDIDO", ida: "Un cliente realiza muchos pedidos.", vuelta: "Cada pedido lo realiza un solo cliente.", endA: "1", endB: "N" },
+    { a: "MÉDICO", b: "PACIENTE", ida: "Un médico atiende a muchos pacientes.", vuelta: "Un paciente puede ser atendido por varios médicos.", endA: "N", endB: "N" }
+  ];
+  var rtCur = 0, rtVal = RT.map(function () { return { A: "?", B: "?" }; }), rtState = RT.map(function () { return null; }), rtDone = RT.map(function () { return false; });
+  function rtRender() {
+    var c = RT[rtCur], v = rtVal[rtCur], st = rtState[rtCur];
+    var cs = ""; RT.forEach(function (_, i) { cs += '<button type="button" class="cn' + (i === rtCur ? " on" : "") + (rtDone[i] ? " done" : "") + '" data-i="' + i + '" aria-label="Caso ' + (i + 1) + '">' + (i + 1) + "</button>"; });
+    $("rt-cases").innerHTML = cs;
+    $("rt-read").innerHTML =
+      '<div class="rb ida"><b>Ida · de ' + c.a + " a " + c.b + "</b>" + c.ida + "</div>" +
+      '<div class="rb vue"><b>Vuelta · de ' + c.b + " a " + c.a + "</b>" + c.vuelta + "</div>";
+    $("rt-er").innerHTML = erSvg({ id: "rt", a: c.a, b: c.b, endA: v.A, endB: v.B, mode: "both", interactive: true, state: st });
+    $("rt-fb").innerHTML = "";
+    $("rt-score").textContent = "Casos resueltos: " + rtDone.filter(Boolean).length + " de " + RT.length;
+    mxHot("rt-mx", (v.A !== "?" && v.B !== "?") ? combo(v.A, v.B) : null);
+  }
+  function cycle(x) { return x === "?" ? "1" : (x === "1" ? "N" : "1"); }
+  $("rt-er").addEventListener("click", function (e) {
+    var g = e.target.closest("[data-end]"); if (!g) return;
+    var end = g.getAttribute("data-end"); rtVal[rtCur][end] = cycle(rtVal[rtCur][end]); rtState[rtCur] = null; rtRender();
+  });
+  $("rt-er").addEventListener("keydown", function (e) { var g = e.target.closest("[data-end]"); if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); g.dispatchEvent(new MouseEvent("click", { bubbles: true })); } });
+  $("rt-cases").addEventListener("click", function (e) { var b = e.target.closest(".cn"); if (!b) return; rtCur = +b.getAttribute("data-i"); rtRender(); });
+  $("rt-next").addEventListener("click", function () { rtCur = (rtCur + 1) % RT.length; rtRender(); });
+  $("rt-check").addEventListener("click", function () {
+    var c = RT[rtCur], v = rtVal[rtCur], fb = $("rt-fb");
+    if (v.A === "?" || v.B === "?") { fb.innerHTML = '<div class="fb info">Falta un extremo: toca cada círculo hasta elegir 1 o N.</div>'; return; }
+    var okA = v.A === c.endA, okB = v.B === c.endB;
+    rtState[rtCur] = { A: okA ? "ok" : "no", B: okB ? "ok" : "no" };
+    var typ = combo(c.endA, c.endB), msg = "";
+    if (okA && okB) {
+      rtDone[rtCur] = true;
+      msg = '<div class="fb ok"><p><b>Correcto: ' + typ + ".</b></p><p><b>Ida</b> (" + c.ida + ") &rarr; número junto a " + c.b + ": <strong>" + c.endB + "</strong>.</p><p><b>Vuelta</b> (" + c.vuelta + ") &rarr; número junto a " + c.a + ": <strong>" + c.endA + "</strong>.</p></div>";
+    } else {
+      var swapped = !okA && !okB && v.A === c.endB && v.B === c.endA && c.endA !== c.endB;
+      msg = '<div class="fb no"><p><b>Todavía no.</b></p>';
+      if (swapped) msg += "<p>Invertiste los extremos: pusiste cada número junto a la entidad de la que parte la pregunta. <strong>El número de la ida va junto a " + c.b + " (el extremo lejano)</strong> y el de la vuelta junto a " + c.a + ".</p>";
+      else {
+        if (!okB) msg += "<p>Extremo de <strong>" + c.b + "</strong>: revisa la <b>ida</b>: «" + c.ida + "». Es la que responde ese número.</p>";
+        if (!okA) msg += "<p>Extremo de <strong>" + c.a + "</strong>: revisa la <b>vuelta</b>: «" + c.vuelta + "». Es la que responde ese número.</p>";
+      }
+      msg += "</div>";
+    }
+    fb.innerHTML = msg; rtRender2(msg);
+  });
+  function rtRender2(msg) { var st = rtState[rtCur], c = RT[rtCur], v = rtVal[rtCur]; $("rt-er").innerHTML = erSvg({ id: "rt", a: c.a, b: c.b, endA: v.A, endB: v.B, mode: "both", interactive: true, state: st }); $("rt-fb").innerHTML = msg; $("rt-score").textContent = "Casos resueltos: " + rtDone.filter(Boolean).length + " de " + RT.length; var cs = ""; RT.forEach(function (_, i) { cs += '<button type="button" class="cn' + (i === rtCur ? " on" : "") + (rtDone[i] ? " done" : "") + '" data-i="' + i + '" aria-label="Caso ' + (i + 1) + '">' + (i + 1) + "</button>"; }); $("rt-cases").innerHTML = cs; }
+  rtRender();
+
+  /* ============================================================
+     LABORATORIO 3 · Lectura de diagramas
+     ============================================================ */
+  var QZ = [
+    { a: "DOCENTE", b: "GRUPO", pa: "docentes", pb: "grupos", endA: "1", endB: "N" },
+    { a: "PRODUCTO", b: "CATEGORÍA", pa: "productos", pb: "categorías", endA: "N", endB: "1" },
+    { a: "ESTUDIANTE", b: "CREDENCIAL", pa: "estudiantes", pb: "credenciales", endA: "1", endB: "1" },
+    { a: "ALUMNO", b: "MATERIA", pa: "alumnos", pb: "materias", endA: "N", endB: "N" },
+    { a: "PEDIDO", b: "CLIENTE", pa: "pedidos", pb: "clientes", endA: "N", endB: "1" },
+    { a: "CLIENTE", b: "PEDIDO", pa: "clientes", pb: "pedidos", endA: "1", endB: "N" }
+  ];
+  var qOrder, qi, qScore, qAns;
+  function qShuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function qStart() { qOrder = QZ.map(function (_, i) { return i; }); qi = 0; qScore = 0; qShow(); }
+  function sent(ent, x, other, pother) { return "Cada " + lc(ent) + " &rarr; hasta " + x + " " + (x === "1" ? lc(other) : lc(pother)); }
+  function qShow() {
+    if (qi >= qOrder.length) { qEnd(); return; }
+    var q = QZ[qOrder[qi]]; qAns = false;
+    var combos = qShuffle([["1", "1"], ["1", "N"], ["N", "1"], ["N", "N"]]); // [ida, vuelta]
+    var h = '<div class="qz-top"><span>Diagrama ' + (qi + 1) + " de " + qOrder.length + '</span><span>Aciertos: <strong>' + qScore + '</strong></span></div><div class="qz-bar"><i style="width:' + (qi / qOrder.length * 100) + '%"></i></div>';
+    h += '<div class="er-wrap"><svg id="qz-er" viewBox="0 0 640 215" role="img" aria-label="Diagrama de ' + q.a + " y " + q.b + '">' + erSvg({ id: "q" + qi, a: q.a, b: q.b, endA: q.endA, endB: q.endB, mode: "both" }) + "</svg></div>";
+    h += "<p style=\"margin:.7rem 0 0;\"><strong>¿Qué enunciados describen correctamente este diagrama?</strong></p><div class=\"opts\">";
+    combos.forEach(function (c) {
+      h += '<button type="button" class="opt" data-i="' + c[0] + '" data-v="' + c[1] + '"><span class="l i"><b>IDA</b>' + sent(q.a, c[0], q.b, q.pb) + '</span><span class="l v"><b>VUELTA</b>' + sent(q.b, c[1], q.a, q.pa) + "</span></button>";
+    });
+    h += '</div><div id="qz-fb" aria-live="polite"></div>';
+    $("qz-root").innerHTML = h;
+    $("qz-er").innerHTML = erSvg({ id: "q" + qi, a: q.a, b: q.b, endA: q.endA, endB: q.endB, mode: "both" });
+    Array.prototype.forEach.call($("qz-root").querySelectorAll(".opt"), function (b) { b.addEventListener("click", function () { qAnswer(b); }); });
+  }
+  function qAnswer(btn) {
+    if (qAns) return; qAns = true;
+    var q = QZ[qOrder[qi]], ci = btn.getAttribute("data-i"), cv = btn.getAttribute("data-v"), good = ci === q.endB && cv === q.endA;
+    if (good) qScore++;
+    Array.prototype.forEach.call($("qz-root").querySelectorAll(".opt"), function (b) {
+      b.disabled = true;
+      if (b.getAttribute("data-i") === q.endB && b.getAttribute("data-v") === q.endA) b.classList.add("right"); else if (b === btn) b.classList.add("wrong");
+    });
+    var fb = $("qz-fb"), typ = combo(q.endA, q.endB);
+    fb.className = "fb " + (good ? "ok" : "no");
+    fb.innerHTML = "<p><b>" + (good ? "Correcto." : "No es esa.") + "</b> El diagrama es <b>" + typ + "</b>. El número junto a " + q.b + " (" + q.endB + ") responde la ida; el número junto a " + q.a + " (" + q.endA + ") responde la vuelta.</p>" +
+      '<div class="btn-row"><button type="button" class="btn sm" id="qz-next">' + (qi + 1 < qOrder.length ? "Siguiente diagrama" : "Ver resultado") + "</button></div>";
+    $("qz-next").addEventListener("click", function () { qi++; qShow(); });
+    $("qz-next").focus();
+  }
+  function qEnd() {
+    var n = qOrder.length, m = qScore === n ? "Lees los dos sentidos sin invertirlos." : (qScore >= n - 1 ? "Muy bien. Revisa el diagrama que fallaste empezando por las dos preguntas." : "Vuelve a la regla del número lejano y repite el laboratorio.");
+    $("qz-root").innerHTML = '<div class="qz-bar"><i style="width:100%"></i></div><div class="qz-end"><div class="score">' + qScore + " / " + n + "</div><p>" + m + '</p><p style="font-size:.9rem;color:var(--ink-secondary);">Los diagramas 5 y 6 eran la misma relación con las entidades en distinto orden: cambia la forma de nombrarla, no el hecho.</p><div class="btn-row" style="justify-content:center;"><button type="button" class="btn" id="qz-again">Intentar de nuevo</button></div></div>';
+    $("qz-again").addEventListener("click", qStart);
+  }
+  qStart();
+
+  /* ============================================================
+     Cronómetro de la daily
+     ============================================================ */
+  var TOTAL = 900, CUTS = [0, 90, 300, 480, 690, 840, 900];
+  var elapsed = 0, timer = null, t0 = 0, base = 0, lastB = -1;
+  function fmt(s) { var m = Math.floor(s / 60), r = s % 60; return (m < 10 ? "0" : "") + m + ":" + (r < 10 ? "0" : "") + r; }
+  function blockOf(s) { for (var i = 0; i < 6; i++) if (s < CUTS[i + 1]) return i; return 5; }
+  function tUpdate() {
+    var rem = Math.max(0, TOTAL - elapsed), b = blockOf(Math.min(elapsed, TOTAL - 1));
+    $("clock").firstChild.nodeValue = fmt(rem);
+    $("clock").classList.toggle("warn", rem <= 60);
+    $("clock-lbl").textContent = rem === 0 ? "Tiempo cumplido" : (timer ? "Tiempo restante" : (elapsed ? "En pausa" : "Tiempo restante"));
+    Array.prototype.forEach.call(document.querySelectorAll(".chip-b"), function (c, i) {
+      var started = elapsed > 0 || timer;
+      c.classList.toggle("on", started && i === b && rem > 0);
+      c.classList.toggle("done", started && (i < b || rem === 0));
+    });
+    if (b !== lastB && (timer || elapsed)) { lastB = b; if ($("t-auto").checked && timer) { var el = $("b" + (b + 1)); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); } }
+  }
+  function tTick() { elapsed = base + Math.floor((Date.now() - t0) / 1000); if (elapsed >= TOTAL) { elapsed = TOTAL; tStop(); } tUpdate(); }
+  function tStop() { if (timer) { clearInterval(timer); timer = null; } $("t-go").textContent = elapsed >= TOTAL ? "Terminado" : (elapsed ? "Continuar" : "Iniciar"); $("t-go").disabled = elapsed >= TOTAL; }
+  $("t-go").addEventListener("click", function () {
+    if (timer) { tStop(); tUpdate(); return; }
+    if (elapsed >= TOTAL) return;
+    base = elapsed; t0 = Date.now(); timer = setInterval(tTick, 250); $("t-go").textContent = "Pausar"; tUpdate();
+  });
+  $("t-reset").addEventListener("click", function () { tStop(); elapsed = 0; base = 0; lastB = -1; $("t-go").disabled = false; $("t-go").textContent = "Iniciar"; tUpdate(); });
+  tUpdate();
+})();
+</script>
+</body>
+</html>
