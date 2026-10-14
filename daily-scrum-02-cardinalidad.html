@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Scrum 2 — Cardinalidad</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  :root { --ida: #490b58; --vuelta: #B45F06; --ida-soft: #F5E8EE; --ok: #1F5B2B; --bad: #8C1D18; }
+
+  .mixtle-card { display: flex; gap: 1.5rem; align-items: center; }
+  .mixtle-card img { width: 110px; flex-shrink: 0; }
+  @media (max-width: 600px) { .mixtle-card { flex-direction: column; text-align: center; } }
+  .mixtle-tip { display: flex; gap: .9rem; align-items: center; margin: 1.2rem 0; }
+  .mixtle-tip img { width: 72px; flex-shrink: 0; }
+  code { font-family: var(--font-mono); font-size: .86em; background: var(--surface); padding: .05rem .3rem; border-radius: 3px; }
+  .page-wrapper h3 { margin-top: 1.4rem; }
+
+  /* ---------- Barra del cronómetro ---------- */
+  .daily-bar { position: sticky; top: 0; z-index: 60; background: #fff; border-bottom: 2px solid var(--guinda); box-shadow: 0 3px 10px rgba(73,11,88,.12); }
+  .daily-inner { max-width: 1000px; margin: 0 auto; padding: .55rem 1rem; display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; }
+  .clock { font-family: var(--font-mono); font-weight: 700; font-size: 1.7rem; color: var(--guinda); min-width: 4.6rem; line-height: 1; }
+  .clock.warn { color: #C0392B; }
+  .clock small { display: block; font-family: var(--font-ui); font-size: .6rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-muted); margin-top: .15rem; }
+  .chips { display: flex; gap: .35rem; flex: 1; min-width: 240px; }
+  .chip-b { flex: 1; text-align: center; text-decoration: none; background: var(--off-white); border: 1.5px solid var(--border-strong); border-radius: var(--radius-md); padding: .28rem .2rem; font-family: var(--font-ui); font-size: .68rem; line-height: 1.2; color: var(--ink-secondary); }
+  .chip-b b { display: block; font-size: .8rem; color: var(--guinda); }
+  .chip-b:hover { background: var(--guinda-light); text-decoration: none; }
+  .chip-b.on { background: var(--guinda); border-color: var(--guinda); color: #fff; }
+  .chip-b.on b { color: #fff; }
+  .chip-b.done { opacity: .55; }
+  .tbtns { display: flex; gap: .4rem; align-items: center; }
+  .autoscroll { font-family: var(--font-ui); font-size: .68rem; color: var(--ink-secondary); display: flex; gap: .25rem; align-items: center; }
+  @media (max-width: 700px) { .chip-b span { display: none; } .chips { min-width: 0; } }
+
+  .btn { font-family: var(--font-ui); font-size: .82rem; font-weight: 600; cursor: pointer; border: 1.5px solid var(--guinda); background: var(--guinda); color: #fff; padding: .5rem 1rem; border-radius: var(--radius-md); transition: background .15s, color .15s; }
+  .btn:hover { background: var(--guinda-dark); }
+  .btn.ghost { background: #fff; color: var(--guinda); }
+  .btn.ghost:hover { background: var(--guinda-light); }
+  .btn.sm { padding: .35rem .75rem; font-size: .76rem; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn:focus-visible, .cn:focus-visible, .stu:focus-visible, .dk:focus-visible, .er-num:focus-visible, .chip-b:focus-visible { outline: 3px solid var(--guinda-rule); outline-offset: 2px; }
+  .btn-row { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .9rem; align-items: center; }
+
+  .blk-head { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.1rem; padding-bottom: .7rem; border-bottom: 1.5px solid var(--guinda-rule); }
+  .blk-n { flex-shrink: 0; width: 3rem; height: 3rem; border-radius: 50%; background: var(--guinda); color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 1.7rem; font-weight: 700; }
+  .blk-head h2 { margin: 0; color: var(--guinda); font-size: 1.55rem; }
+  .blk-time { font-family: var(--font-ui); font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--guinda-mid); display: block; margin-bottom: .1rem; }
+  .section { scroll-margin-top: 90px; }
+
+  /* ---------- Diagrama ER (mismo lenguaje visual de la daily 1) ---------- */
+  .legend { display: flex; gap: 1.2rem; flex-wrap: wrap; font-family: var(--font-ui); font-size: .8rem; margin: .6rem 0 .3rem; }
+  .legend span { display: inline-flex; align-items: center; gap: .4rem; }
+  .legend i { display: inline-block; width: 26px; height: 5px; border-radius: 3px; }
+  .legend .i-ida { background: var(--ida); } .legend .i-vue { background: var(--vuelta); }
+  .er-wrap { background: var(--off-white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: .5rem .5rem .2rem; }
+  .er-wrap svg { width: 100%; height: auto; display: block; }
+  .er-box { fill: #fff; stroke: var(--guinda); stroke-width: 2.5; }
+  .er-name { font-family: var(--font-ui); font-size: 16px; font-weight: 700; fill: var(--guinda); text-anchor: middle; }
+  .er-line { stroke: var(--guinda-rule); stroke-width: 3; }
+  .er-num circle.bg { fill: #fff; stroke: var(--ink-secondary); stroke-width: 2.2; }
+  .er-num text { font-family: var(--font-ui); font-size: 20px; font-weight: 700; fill: var(--ink); text-anchor: middle; pointer-events: none; }
+  .er-num.unk circle.bg { stroke-dasharray: 4 3; fill: #FFFDF7; }
+  .er-num.unk text { fill: var(--ink-muted); }
+  .er-num[data-end] { cursor: pointer; }
+  .er-num[data-end]:hover circle.bg { fill: var(--guinda-light); }
+  .er-num.ok circle.bg { stroke: #3E9B52; stroke-width: 3.5; fill: #EAF5EC; }
+  .er-num.no circle.bg { stroke: #B3261E; stroke-width: 3.5; fill: #FDECEA; }
+  .er-ring { fill: none; stroke-width: 4; opacity: 0; }
+  .er-arrow { fill: none; stroke-width: 3.5; }
+  .er-lbl { font-family: var(--font-ui); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-anchor: middle; }
+  .read-boxes { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin: .8rem 0; }
+  @media (max-width: 700px) { .read-boxes { grid-template-columns: 1fr; } }
+  .rb { border-radius: var(--radius-md); padding: .75rem .95rem; font-size: .95rem; border: 1px solid var(--border); background: #fff; }
+  .rb.ida { border-left: 6px solid var(--ida); } .rb.vue { border-left: 6px solid var(--vuelta); }
+  .rb b { font-family: var(--font-ui); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; display: block; margin-bottom: .15rem; }
+  .rb.ida b { color: var(--ida); } .rb.vue b { color: var(--vuelta); }
+  .rb .far { font-family: var(--font-ui); font-size: .78rem; color: var(--ink-secondary); margin-top: .3rem; display: block; }
+
+  .big-rule { border: 3px solid var(--guinda); border-radius: var(--radius-lg); padding: 1rem 1.3rem; background: var(--ida-soft); margin: 1.3rem 0; text-align: center; }
+  .big-rule b { font-family: var(--font-ui); font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; color: var(--guinda-mid); display: block; margin-bottom: .3rem; }
+  .big-rule p { font-family: var(--font-display); font-size: 1.45rem; line-height: 1.3; margin: 0; color: var(--guinda); font-weight: 600; }
+  .pocket { border: 3px solid var(--guinda); border-radius: var(--radius-lg); background: #fff; padding: 1.1rem 1.3rem; margin: 1.3rem 0; box-shadow: var(--shadow-md); }
+  .pocket h3 { margin: 0 0 .6rem !important; color: var(--guinda); font-size: 1.2rem; }
+  .pocket li { margin-bottom: .35rem; }
+  .pocket .mini2 { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; margin-top: .6rem; font-family: var(--font-ui); font-size: .78rem; }
+  @media (max-width: 640px) { .pocket .mini2 { grid-template-columns: repeat(2, 1fr); } }
+  .pocket .mini2 div { background: var(--ida-soft); border-radius: var(--radius-md); padding: .5rem .6rem; text-align: center; }
+  .pocket .mini2 b { display: block; color: var(--guinda); font-size: 1rem; }
+
+  /* ---------- Laboratorio ---------- */
+  .lab { border: 2px solid var(--guinda); border-radius: var(--radius-lg); background: #fff; margin: 1.5rem 0; overflow: hidden; box-shadow: var(--shadow-md); }
+  .lab-head { background: var(--guinda); color: #fff; padding: .65rem 1.2rem; display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; font-family: var(--font-ui); }
+  .lab-head .tag { font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; background: rgba(255,255,255,.2); padding: .18rem .65rem; border-radius: 999px; }
+  .lab-head h3 { margin: 0 !important; color: #fff; font-family: var(--font-ui); font-size: 1rem; font-weight: 600; }
+  .lab-body { padding: 1.1rem 1.3rem 1.3rem; }
+  .lab-intro { font-size: .95rem; margin-bottom: .8rem; }
+  .cases { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .8rem; }
+  .cn { width: 2.1rem; height: 2.1rem; border-radius: 50%; border: 2px solid var(--border-strong); background: #fff; font-family: var(--font-ui); font-weight: 700; cursor: pointer; color: var(--ink-secondary); }
+  .cn.on { background: var(--guinda); color: #fff; border-color: var(--guinda); }
+  .cn.done { border-color: #3E9B52; color: #1F5B2B; }
+  .cn.done.on { background: #3E9B52; color: #fff; }
+  .rule-box { border: 1px solid var(--border); border-left: 6px solid var(--guinda); border-radius: var(--radius-md); background: #FFFDF7; padding: .8rem 1rem; font-size: 1.02rem; }
+  .rule-box b { font-family: var(--font-ui); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--guinda-mid); display: block; margin-bottom: .2rem; }
+  .hint-line { font-family: var(--font-ui); font-size: .8rem; color: var(--ink-secondary); margin: .4rem 0; }
+  .fb { margin-top: .8rem; padding: .8rem 1rem; border-radius: var(--radius-md); font-size: .93rem; }
+  .fb.ok { background: #EAF5EC; border: 1px solid #A9D3B0; color: var(--ok); }
+  .fb.no { background: #FDECEA; border: 1px solid #E8B4AF; color: var(--bad); }
+  .fb.info { background: var(--off-white); border: 1px solid var(--border); color: var(--ink-secondary); }
+  .fb p { margin: .2rem 0; font-size: .92rem; }
+  .fb b { font-family: var(--font-ui); }
+  .tagcase { display: inline-block; font-family: var(--font-ui); font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; background: var(--guinda); color: #fff; padding: .12rem .6rem; border-radius: 999px; margin-bottom: .3rem; }
+  .qs { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin-top: .6rem; }
+  @media (max-width: 700px) { .qs { grid-template-columns: 1fr; } }
+
+  /* ---------- Scrum Poker ---------- */
+  .pk-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin: 1rem 0; }
+  @media (max-width: 760px) { .pk-steps { grid-template-columns: 1fr; } }
+  .pks { background: #fff; border: 1px solid var(--border); border-top: 4px solid var(--guinda); border-radius: var(--radius-md); padding: .8rem 1rem; box-shadow: var(--shadow-sm); }
+  .pks .n { display: inline-flex; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--guinda); color: #fff; align-items: center; justify-content: center; font-family: var(--font-ui); font-weight: 700; font-size: .82rem; margin-bottom: .3rem; }
+  .pks h4 { margin: 0 0 .2rem; color: var(--guinda-dark); font-size: 1rem; }
+  .pks p { margin: 0; font-size: .88rem; color: var(--ink-secondary); }
+  .pk-q { font-family: var(--font-display); font-size: 1.35rem; color: var(--guinda); text-align: center; margin: 1rem 0 .3rem; }
+  .stus { display: grid; grid-template-columns: repeat(5, 1fr); gap: .7rem; margin: .8rem 0; }
+  @media (max-width: 800px) { .stus { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 480px) { .stus { grid-template-columns: repeat(2, 1fr); } }
+  .stu { display: flex; flex-direction: column; align-items: center; gap: .35rem; background: #fff; border: 2px solid var(--border-strong); border-radius: var(--radius-lg); padding: .8rem .4rem .7rem; cursor: pointer; font-family: var(--font-ui); transition: border-color .15s, background .15s; }
+  .stu:hover:not(:disabled) { background: var(--guinda-light); border-color: var(--guinda); }
+  .stu.turn { border-color: var(--guinda); background: var(--ida-soft); box-shadow: 0 0 0 3px rgba(73,11,88,.2); }
+  .stu.voted { border-color: #3E9B52; }
+  .stu:disabled { cursor: default; }
+  .stu b { font-size: .95rem; color: var(--ink); text-align: center; }
+  .stu small { font-size: .72rem; color: var(--ink-secondary); text-align: center; min-height: 1.1em; }
+  .pcard { width: 56px; height: 78px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 2rem; font-weight: 700; border: 2px solid var(--guinda); }
+  .pcard.empty { border-style: dashed; border-color: var(--border-strong); background: var(--off-white); }
+  .pcard.back { background: repeating-linear-gradient(45deg, var(--guinda) 0 6px, var(--guinda-mid) 6px 12px); border-color: var(--guinda-dark); }
+  .pcard.face { background: #fff; color: var(--guinda); animation: flipin .5s ease; }
+  .pcard.v1, .pcard.v2 { background: #FDECEA; color: var(--bad); border-color: #B3261E; }
+  .pcard.v3 { background: #FFF4D6; color: #8A5A00; border-color: #C58A00; }
+  .pcard.v5, .pcard.v8 { background: #EAF5EC; color: var(--ok); border-color: #3E9B52; }
+  @keyframes flipin { from { transform: rotateY(90deg); } to { transform: rotateY(0); } }
+  .turn-panel { border: 2px solid var(--guinda); border-radius: var(--radius-lg); background: #fff; padding: 1rem 1.1rem; margin: .6rem 0; }
+  .turn-panel h4 { margin: 0 0 .2rem; color: var(--guinda); font-size: 1.05rem; }
+  .deck { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: .8rem; justify-content: center; }
+  .dk { width: 112px; background: #fff; border: 2px solid var(--guinda); border-radius: 12px; padding: .7rem .4rem; cursor: pointer; font-family: var(--font-ui); text-align: center; transition: transform .12s, background .12s; }
+  .dk:hover { transform: translateY(-4px); background: var(--guinda-light); }
+  .dk .num { display: block; font-family: var(--font-display); font-size: 2.2rem; font-weight: 700; color: var(--guinda); line-height: 1.1; }
+  .dk .lab2 { display: block; font-size: .72rem; color: var(--ink-secondary); margin-top: .2rem; line-height: 1.25; }
+  .scale-row { display: flex; gap: .4rem; flex-wrap: wrap; justify-content: center; font-family: var(--font-ui); font-size: .74rem; color: var(--ink-secondary); margin-bottom: .4rem; }
+  .scale-row span { background: var(--off-white); border: 1px solid var(--border); border-radius: 999px; padding: .12rem .65rem; }
+  .scale-row b { color: var(--guinda); }
+
+  .dist { display: grid; grid-template-columns: repeat(5, 1fr); gap: .6rem; margin: 1rem 0; }
+  @media (max-width: 640px) {
+    .dist { grid-template-columns: 1fr; gap: .4rem; }
+    .dist .dcol { min-height: 0; display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; text-align: left; padding: .45rem .6rem; }
+    .dist .dcol .hd { min-width: 1.6rem; }
+    .dist .dcol .cap { display: inline; margin: 0; min-width: 7.5rem; font-size: .72rem; }
+    .dist .nchip { display: inline-block; margin: 0; padding: .15rem .7rem; }
+  }
+  .dcol { background: var(--off-white); border: 1px solid var(--border); border-radius: var(--radius-md); padding: .5rem .3rem; text-align: center; min-height: 128px; }
+  .dcol .hd { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; color: var(--guinda); line-height: 1; }
+  .dcol .cap { font-family: var(--font-ui); font-size: .62rem; color: var(--ink-muted); display: block; margin-bottom: .4rem; line-height: 1.2; }
+  .nchip { display: block; font-family: var(--font-ui); font-size: .78rem; font-weight: 600; background: var(--guinda); color: #fff; border-radius: 999px; padding: .15rem .3rem; margin: .22rem auto 0; max-width: 100%; overflow-wrap: anywhere; }
+  .stats4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; }
+  @media (max-width: 700px) { .stats4 { grid-template-columns: repeat(2, 1fr); } }
+  .st { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-md); padding: .55rem .8rem; font-family: var(--font-ui); font-size: .72rem; color: var(--ink-secondary); }
+  .st b { display: block; font-size: 1.15rem; color: var(--ink); line-height: 1.25; }
+  .st small { font-size: .72rem; color: var(--ink-secondary); }
+  .vd { border-radius: var(--radius-lg); padding: 1rem 1.2rem; margin-top: 1rem; border: 3px solid; }
+  .vd .vt { font-family: var(--font-ui); font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; display: block; margin-bottom: .2rem; }
+  .vd h4 { margin: 0 0 .3rem; font-size: 1.5rem; font-family: var(--font-display); }
+  .vd p { margin: .2rem 0; font-size: .95rem; }
+  .vd.green { background: #EAF5EC; border-color: #3E9B52; color: var(--ok); }
+  .vd.yellow { background: #FFF4D6; border-color: #C58A00; color: #6B4600; }
+  .vd.red { background: #FDECEA; border-color: #B3261E; color: var(--bad); }
+  .rounds { margin: .8rem 0 0; padding: 0; list-style: none; font-family: var(--font-ui); font-size: .8rem; color: var(--ink-secondary); }
+  .rounds li { padding: .3rem .6rem; border-left: 4px solid var(--guinda-rule); margin-bottom: .25rem; background: var(--off-white); border-radius: 0 6px 6px 0; }
+  table.rules td, table.rules th { font-size: .86rem; }
+  .rules td:first-child { white-space: nowrap; font-weight: 700; font-family: var(--font-ui); }
+  .scrum-box { border-left: 4px solid var(--guinda); background: #FFFDF7; padding: .8rem 1.1rem; border-radius: 0 var(--radius-md) var(--radius-md) 0; font-size: .94rem; margin: 1rem 0; }
+
+  @media (max-width: 640px) {
+    .er-wrap { overflow-x: auto; }
+    .er-wrap svg { min-width: 560px; }
+    .lab-body { padding: 1rem .9rem 1.1rem; }
+    .dk { width: 96px; }
+  }
+  @media print { .daily-bar { display: none; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo-wrap"><img src="imagen1.png" alt="Logotipo IEDEP"></div>
+  <div class="header-text">
+    <span class="inst-name">Instituto de Educación Digital del Estado de Puebla</span>
+    <span class="doc-title">Daily Scrum · Licenciatura en Sistemas Computacionales</span>
+  </div>
+</header>
+
+<section class="class-hero">
+  <span class="class-label">Daily Scrum 2 · Cierre del tema de cardinalidad</span>
+  <h1>De la regla de negocio a los dos extremos</h1>
+  <span class="class-subtitle">Un laboratorio breve para cerrar el tema y un Scrum Poker para decidir si el grupo puede avanzar</span>
+  <div class="meta-row">
+    <div class="meta-item">Programa educativo<span>Lic. en Sistemas Computacionales</span></div>
+    <div class="meta-item">Asignatura<span>Bases de Datos I</span></div>
+    <div class="meta-item">Unidad<span>2 · Modelado de Datos (refuerzo)</span></div>
+    <div class="meta-item">Tema<span>2.2 Cardinalidad de las relaciones (cierre)</span></div>
+    <div class="meta-item">Duración<span>15 minutos</span></div>
+    <div class="meta-item">Fecha<span>Miércoles 14 de octubre de 2026</span></div>
+  </div>
+</section>
+
+<div class="daily-bar" role="region" aria-label="Cronómetro de la daily">
+  <div class="daily-inner">
+    <div class="clock" id="clock">15:00<small id="clock-lbl">Tiempo restante</small></div>
+    <nav class="chips" aria-label="Bloques de la daily">
+      <a class="chip-b" href="#b1"><b>1</b><span>0:00 · Repaso</span></a>
+      <a class="chip-b" href="#b2"><b>2</b><span>2:00 · Laboratorio</span></a>
+      <a class="chip-b" href="#b3"><b>3</b><span>10:00 · Scrum Poker</span></a>
+    </nav>
+    <div class="tbtns">
+      <button class="btn sm" id="t-go" type="button">Iniciar</button>
+      <button class="btn sm ghost" id="t-reset" type="button">Reiniciar</button>
+      <label class="autoscroll"><input type="checkbox" id="t-auto"> Ir al bloque</label>
+    </div>
+  </div>
+</div>
+
+<main class="page-wrapper">
+
+  <section class="section" style="margin-top:2rem;">
+    <h2 class="section-title">Competencias a desarrollar</h2>
+    <div class="competency-card">
+      <span class="comp-num">01</span>
+      <span class="comp-text"><strong>Deducir</strong> la cardinalidad de una relación a partir de una regla de negocio escrita en lenguaje natural, registrando el resultado de cada sentido en su extremo.</span>
+    </div>
+    <div class="competency-card">
+      <span class="comp-num">02</span>
+      <span class="comp-text"><strong>Valorar</strong> el propio nivel de comprensión del tema mediante una votación tipo Scrum Poker y acordar en equipo si es posible avanzar.</span>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="card mixtle-card">
+      <img src="imagen2.png" alt="Mixtle, guía de la daily">
+      <div>
+        <span class="card-title">Hoy cerramos el tema</span>
+        <p>En la daily anterior aprendimos a leer la cardinalidad en <strong>dos sentidos</strong>. Hoy la practicamos desde cero: partimos de una <strong>regla de negocio</strong>, hacemos las dos preguntas nosotros mismos y colocamos cada número en su extremo. Al final, cada quien vota qué tan claro le quedó.</p>
+      </div>
+    </div>
+    <div class="scrum-box"><strong>Formato daily:</strong> evento de <strong>15 minutos</strong> con tiempo fijo. Tres bloques: repaso (2 min), laboratorio (8 min) y Scrum Poker con decisión (5 min).</div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- BLOQUE 1 -->
+  <section class="section" id="b1">
+    <div class="blk-head"><span class="blk-n">1</span><div><span class="blk-time">0:00 – 2:00 · 2 min</span><h2>Repaso relámpago</h2></div></div>
+
+    <div class="legend">
+      <span><i class="i-ida"></i><span><strong>IDA:</strong> parto de A y miro hacia B</span></span>
+      <span><i class="i-vue"></i><span><strong>VUELTA:</strong> parto de B y miro hacia A</span></span>
+    </div>
+    <div class="er-wrap"><svg id="er-rep" viewBox="0 0 640 215" role="img" aria-label="DOCENTE 1, GRUPO N con las lecturas de ida y vuelta"></svg></div>
+
+    <div class="big-rule">
+      <b>La regla del número lejano</b>
+      <p>El número de la ida va junto a B; el de la vuelta, junto a A. Siempre se cruza.</p>
+    </div>
+
+    <div class="pocket">
+      <h3>Tarjeta de bolsillo: cardinalidad en 3 pasos</h3>
+      <ol>
+        <li><strong>Pregunta ida y vuelta:</strong> "un A, ¿cuántos B?" y "un B, ¿cuántos A?".</li>
+        <li><strong>Responde con máximo:</strong> solo 1 o N, según la regla de negocio, no según los datos de hoy.</li>
+        <li><strong>Cruza el número:</strong> la ida va junto a B; la vuelta va junto a A.</li>
+      </ol>
+      <div class="mini2">
+        <div><b>1:1</b>ida 1 · vuelta 1</div>
+        <div><b>1:N</b>ida N · vuelta 1</div>
+        <div><b>N:1</b>ida 1 · vuelta N</div>
+        <div><b>N:M</b>ida N · vuelta N</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- BLOQUE 2 -->
+  <section class="section" id="b2">
+    <div class="blk-head"><span class="blk-n">2</span><div><span class="blk-time">2:00 – 10:00 · 8 min</span><h2>Laboratorio: de la regla a los extremos</h2></div></div>
+
+    <div class="lab" id="lab">
+      <div class="lab-head"><span class="tag">Laboratorio</span><h3>Cinco reglas de negocio, dos extremos cada una</h3></div>
+      <div class="lab-body">
+        <p class="lab-intro">Lee la regla. Si necesitas ayuda, abre la pista con las dos preguntas. Toca cada círculo del diagrama para elegir <strong>1</strong> o <strong>N</strong> y presiona Comprobar.</p>
+        <div class="cases" id="rt-cases" role="tablist" aria-label="Casos del laboratorio"></div>
+        <div class="rule-box" id="rt-rule"></div>
+        <div class="er-wrap" style="margin-top:.8rem;"><svg id="rt-er" viewBox="0 0 640 215" role="group" aria-label="Diagrama para etiquetar"></svg></div>
+        <div id="rt-hint"></div>
+        <div class="btn-row">
+          <button class="btn" id="rt-check" type="button">Comprobar</button>
+          <button class="btn ghost" id="rt-hintbtn" type="button">Ver pista</button>
+          <button class="btn ghost" id="rt-next" type="button">Siguiente caso</button>
+          <span class="hint-line" id="rt-score"></span>
+        </div>
+        <div id="rt-fb" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- BLOQUE 3 -->
+  <section class="section" id="b3">
+    <div class="blk-head"><span class="blk-n">3</span><div><span class="blk-time">10:00 – 15:00 · 5 min</span><h2>Scrum Poker: ¿qué tan claro quedó?</h2></div></div>
+
+    <p>En Scrum, el Poker sirve para que cada persona dé su opinión <strong>sin que las demás la influyan</strong>. Aquí lo usamos para medir comprensión: cada integrante elige una carta en secreto y todas se revelan al mismo tiempo.</p>
+
+    <div class="pk-steps">
+      <div class="pks"><span class="n">1</span><h4>Elige en secreto</h4><p>Toca tu nombre y escoge una carta. Nadie más debe verla.</p></div>
+      <div class="pks"><span class="n">2</span><h4>Revelen a la vez</h4><p>Cuando todos hayan votado, se voltean las cartas juntas.</p></div>
+      <div class="pks"><span class="n">3</span><h4>Explica y decide</h4><p>El voto más bajo y el más alto explican por qué. Después se decide si avanzamos.</p></div>
+    </div>
+
+    <div class="mixtle-tip">
+      <img src="imagen2.png" alt="Mixtle">
+      <div class="callout" style="margin:0; flex:1;">
+        <p><strong>Analogía de Mixtle:</strong> es como levantar todos la mano al mismo tiempo en lugar de esperar a ver qué hace el de al lado. Así el voto es de cada quien y no una copia del vecino.</p>
+      </div>
+    </div>
+
+    <div class="lab" id="lab-pk">
+      <div class="lab-head"><span class="tag">Votación</span><h3>Cardinalidad: ¿qué tan claro me quedó?</h3></div>
+      <div class="lab-body">
+        <div class="pk-q">¿Podría resolver por mi cuenta un caso nuevo de cardinalidad?</div>
+        <div class="scale-row" aria-label="Escala de cartas">
+          <span><b>1</b> No lo entiendo</span><span><b>2</b> Entiendo poco</span><span><b>3</b> Más o menos</span><span><b>5</b> Lo tengo claro</span><span><b>8</b> Puedo explicarlo</span>
+        </div>
+        <div class="stus" id="pk-stus"></div>
+        <div id="pk-turn"></div>
+        <div class="btn-row" style="justify-content:center;">
+          <button class="btn" id="pk-reveal" type="button">Revelar votos</button>
+          <button class="btn ghost" id="pk-new" type="button" hidden>Nueva ronda</button>
+          <button class="btn ghost" id="pk-reset" type="button">Reiniciar todo</button>
+        </div>
+        <div id="pk-res" aria-live="polite"></div>
+        <ul class="rounds" id="pk-rounds"></ul>
+      </div>
+    </div>
+
+    <h3>Cómo se decide</h3>
+    <div class="table-scroll" style="overflow-x:auto;">
+      <table class="rules">
+        <thead><tr><th>Resultado</th><th>Condición</th><th>Decisión</th></tr></thead>
+        <tbody>
+          <tr><td>Verde</td><td>Nadie votó 1 o 2 y la mediana es 5 o más.</td><td>Podemos avanzar al siguiente tema.</td></tr>
+          <tr><td>Amarillo</td><td>Nadie votó 1 o 2, pero la mediana es menor de 5 o hay 5 puntos o más entre el voto más bajo y el más alto.</td><td>Explican el voto más bajo y el más alto, se resuelve un ejemplo más y se vota de nuevo.</td></tr>
+          <tr><td>Rojo</td><td>Al menos una persona votó 1 o 2.</td><td>No avanzar todavía: reforzar con esa persona y hacer otra ronda.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Conclusión</h2>
+    <p>Para cerrar el tema, la cardinalidad se obtiene siempre de la regla de negocio y nunca de los datos de un momento dado. Cada relación se interroga en sus dos sentidos, se responde con el máximo permitido (1 o N) y cada respuesta se anota en el extremo opuesto del diagrama. El Scrum Poker permite saber, sin presión del grupo, si esa lectura ya es un hábito o si conviene reforzarla antes de pasar al siguiente tema.</p>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Referencias bibliográficas</h2>
+    <ul>
+      <li>Ahijado Sánchez, A. (2022). <em>Bases de datos</em>. McGraw-Hill.</li>
+      <li>Cohn, M. (2005). <em>Agile estimating and planning</em>. Prentice Hall.</li>
+      <li>Schwaber, K. y Sutherland, J. (2020). <em>La Guía de Scrum</em>. Scrum Guides. https://scrumguides.org</li>
+      <li>Silberschatz, A., Korth, H. F. y Sudarshan, S. (2021). <em>Database system concepts</em> (7.ª ed.). McGraw-Hill.</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <span><strong>IEDEP</strong> · Bases de Datos I — Daily Scrum 2</span>
+  <span>Mtro. José Armando Vera Rodríguez · Miércoles 14 de octubre de 2026</span>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var C_IDA = "#490b58", C_VUE = "#B45F06";
+  function $(id) { return document.getElementById(id); }
+  function lc(s) { return s.toLowerCase(); }
+  function combo(endA, endB) { return (endA === "N" && endB === "N") ? "N:M" : endA + ":" + endB; }
+
+  /* endA = respuesta de la VUELTA (junto a A); endB = respuesta de la IDA (junto a B) */
+  function erSvg(o) {
+    var p = o.id, s = '<defs>' +
+      '<marker id="' + p + '-mi" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="' + C_IDA + '"/></marker>' +
+      '<marker id="' + p + '-mv" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="' + C_VUE + '"/></marker></defs>';
+    s += '<path class="er-arrow" d="M105,66 C105,0 535,0 535,62" stroke="' + C_IDA + '" marker-end="url(#' + p + '-mi)"/>';
+    s += '<text class="er-lbl" x="320" y="54" fill="' + C_IDA + '">IDA  ·  PARTO DE UN ' + o.a + '</text>';
+    s += '<path class="er-arrow" d="M535,134 C535,210 105,210 105,138" stroke="' + C_VUE + '" marker-end="url(#' + p + '-mv)"/>';
+    s += '<text class="er-lbl" x="320" y="160" fill="' + C_VUE + '">VUELTA  ·  PARTO DE UN ' + o.b + '</text>';
+    s += '<rect class="er-box" x="20" y="70" width="170" height="64" rx="6"/><text class="er-name" x="105" y="108">' + o.a + '</text>';
+    s += '<rect class="er-box" x="450" y="70" width="170" height="64" rx="6"/><text class="er-name" x="535" y="108">' + o.b + '</text>';
+    s += '<line class="er-line" x1="190" y1="102" x2="450" y2="102"/>';
+    function num(x, v, end, st, aria) {
+      var cls = "er-num" + (v === "?" ? " unk" : "") + (st ? " " + st : "");
+      var at = o.interactive ? ' data-end="' + end + '" role="button" tabindex="0" aria-label="' + aria + ', valor ' + v + '"' : "";
+      return '<g class="' + cls + '"' + at + '><circle class="bg" cx="' + x + '" cy="102" r="21"/><text x="' + x + '" y="109">' + v + '</text></g>';
+    }
+    s += num(226, o.endA, "A", o.state && o.state.A, "Número junto a " + o.a);
+    s += num(414, o.endB, "B", o.state && o.state.B, "Número junto a " + o.b);
+    return s;
+  }
+  $("er-rep").innerHTML = erSvg({ id: "rep", a: "DOCENTE", b: "GRUPO", endA: "1", endB: "N" });
+
+  /* ============================================================
+     LABORATORIO
+     ============================================================ */
+  var RT = [
+    { a: "USUARIO", b: "PRÉSTAMO", pa: "usuarios", pb: "préstamos", endA: "1", endB: "N", tag: "Caso base",
+      rule: "En la biblioteca, un usuario puede tener varios préstamos a lo largo del tiempo. Cada préstamo se registra para un solo usuario.",
+      why: "Un usuario llega a muchos préstamos (ida: N) y un préstamo llega a un solo usuario (vuelta: 1)." },
+    { a: "CARRERA", b: "MATERIA", pa: "carreras", pb: "materias", endA: "N", endB: "N", tag: "Dos lados N",
+      rule: "Una carrera ofrece muchas materias. Una misma materia, como Inglés, puede formar parte del plan de varias carreras.",
+      why: "Una carrera llega a muchas materias (ida: N) y una materia llega a muchas carreras (vuelta: N). Es muchos a muchos." },
+    { a: "EMPLEADO", b: "GAFETE", pa: "empleados", pb: "gafetes", endA: "1", endB: "1", tag: "Dos lados 1",
+      rule: "A cada empleado se le entrega un solo gafete, y cada gafete se emite para un solo empleado.",
+      why: "En ambos sentidos el máximo es uno: ida 1 y vuelta 1." },
+    { a: "LIBRO", b: "EDITORIAL", pa: "libros", pb: "editoriales", endA: "N", endB: "1", tag: "Orden invertido",
+      rule: "Cada libro lo publica una sola editorial. Una editorial publica muchos libros.",
+      why: "Aquí el diagrama empieza por LIBRO, así que la ida es 1 (un libro, una editorial) y la vuelta es N (una editorial, muchos libros). Resulta N:1, que es la misma relación que EDITORIAL 1:N LIBRO." },
+    { a: "DOCENTE", b: "GRUPO", pa: "docentes", pb: "grupos", endA: "1", endB: "N", tag: "Trampa: datos de hoy",
+      rule: "Regla: un docente puede ser titular de varios grupos y cada grupo tiene un solo titular. Dato de hoy: en el sistema, cada docente tiene exactamente un grupo.",
+      why: "La cardinalidad es el máximo que permite la regla, no lo que casualmente hay hoy. Que hoy cada docente tenga un grupo no vuelve la relación 1:1: sigue siendo 1:N." }
+  ];
+  var rtCur = 0, rtVal = RT.map(function () { return { A: "?", B: "?" }; }), rtState = RT.map(function () { return null; }),
+      rtDone = RT.map(function () { return false; }), rtHint = RT.map(function () { return false; }), rtFb = RT.map(function () { return ""; });
+  function cycle(x) { return x === "?" ? "1" : (x === "1" ? "N" : "1"); }
+  function rtRender() {
+    var c = RT[rtCur], v = rtVal[rtCur], cs = "";
+    RT.forEach(function (_, i) { cs += '<button type="button" class="cn' + (i === rtCur ? " on" : "") + (rtDone[i] ? " done" : "") + '" data-i="' + i + '" aria-label="Caso ' + (i + 1) + '">' + (i + 1) + "</button>"; });
+    $("rt-cases").innerHTML = cs;
+    $("rt-rule").innerHTML = "<b>Regla de negocio · " + c.a + " y " + c.b + "</b>" + c.rule;
+    $("rt-er").innerHTML = erSvg({ id: "rt", a: c.a, b: c.b, endA: v.A, endB: v.B, interactive: true, state: rtState[rtCur] });
+    $("rt-hint").innerHTML = rtHint[rtCur] ?
+      '<div class="qs"><div class="rb ida"><b>Pregunta de la ida</b>Si parto de <strong>UN ' + lc(c.a) + "</strong>, ¿con cuántos " + c.pb + ' se relaciona, como máximo?<span class="far">La respuesta va junto a ' + c.b + ".</span></div>" +
+      '<div class="rb vue"><b>Pregunta de la vuelta</b>Si parto de <strong>UN ' + lc(c.b) + "</strong>, ¿con cuántos " + c.pa + ' se relaciona, como máximo?<span class="far">La respuesta va junto a ' + c.a + ".</span></div></div>" : "";
+    $("rt-hintbtn").textContent = rtHint[rtCur] ? "Ocultar pista" : "Ver pista";
+    $("rt-fb").innerHTML = rtFb[rtCur];
+    var n = rtDone.filter(Boolean).length;
+    $("rt-score").textContent = "Casos resueltos: " + n + " de " + RT.length;
+  }
+  $("rt-er").addEventListener("click", function (e) {
+    var g = e.target.closest("[data-end]"); if (!g) return;
+    var end = g.getAttribute("data-end"); rtVal[rtCur][end] = cycle(rtVal[rtCur][end]); rtState[rtCur] = null; rtFb[rtCur] = ""; rtRender();
+  });
+  $("rt-er").addEventListener("keydown", function (e) { var g = e.target.closest("[data-end]"); if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); g.dispatchEvent(new MouseEvent("click", { bubbles: true })); } });
+  $("rt-cases").addEventListener("click", function (e) { var b = e.target.closest(".cn"); if (!b) return; rtCur = +b.getAttribute("data-i"); rtRender(); });
+  $("rt-next").addEventListener("click", function () { rtCur = (rtCur + 1) % RT.length; rtRender(); });
+  $("rt-hintbtn").addEventListener("click", function () { rtHint[rtCur] = !rtHint[rtCur]; rtRender(); });
+  $("rt-check").addEventListener("click", function () {
+    var c = RT[rtCur], v = rtVal[rtCur];
+    if (v.A === "?" || v.B === "?") { rtFb[rtCur] = '<div class="fb info">Falta un extremo: toca cada círculo hasta elegir 1 o N.</div>'; rtRender(); return; }
+    var okA = v.A === c.endA, okB = v.B === c.endB, typ = combo(c.endA, c.endB), msg;
+    rtState[rtCur] = { A: okA ? "ok" : "no", B: okB ? "ok" : "no" };
+    if (okA && okB) {
+      rtDone[rtCur] = true;
+      msg = '<div class="fb ok"><span class="tagcase">' + c.tag + "</span><p><b>Correcto: " + typ + ".</b></p><p>" + c.why + "</p></div>";
+      if (rtDone.every(Boolean)) msg += '<div class="fb info"><p><b>Laboratorio completo.</b> Ya pueden pasar al Scrum Poker.</p><div class="btn-row"><a class="btn sm" href="#b3" style="text-decoration:none;display:inline-block;">Ir al Scrum Poker</a></div></div>';
+    } else {
+      var swapped = !okA && !okB && v.A === c.endB && v.B === c.endA && c.endA !== c.endB;
+      msg = '<div class="fb no"><p><b>Todavía no.</b></p>';
+      if (swapped) msg += "<p>Invertiste los extremos. <strong>El número de la ida va junto a " + c.b + "</strong> (el extremo lejano) y el de la vuelta junto a " + c.a + ".</p>";
+      else {
+        if (!okB) msg += "<p>Revisa el extremo de <strong>" + c.b + "</strong>: lo responde la <b>ida</b>. Parte de UN " + lc(c.a) + " y pregunta cuántos " + c.pb + " puede tener como máximo.</p>";
+        if (!okA) msg += "<p>Revisa el extremo de <strong>" + c.a + "</strong>: lo responde la <b>vuelta</b>. Parte de UN " + lc(c.b) + " y pregunta cuántos " + c.pa + " puede tener como máximo.</p>";
+      }
+      msg += "</div>";
+    }
+    rtFb[rtCur] = msg; rtRender();
+  });
+  rtRender();
+
+  /* ============================================================
+     SCRUM POKER
+     ============================================================ */
+  var STUDENTS = ["Hiram", "Stephany", "Zuri", "Kevin Eduardo", "Alexei"];
+  var DECK = [{ v: 1, t: "No lo entiendo" }, { v: 2, t: "Entiendo poco" }, { v: 3, t: "Más o menos" }, { v: 5, t: "Lo tengo claro" }, { v: 8, t: "Puedo explicarlo" }];
+  var votes = {}, turn = null, revealed = false, rounds = [];
+  function label(v) { for (var i = 0; i < DECK.length; i++) if (DECK[i].v === v) return DECK[i].t; return ""; }
+  function list(a) { return a.length <= 1 ? a.join("") : a.slice(0, -1).join(", ") + " y " + a[a.length - 1]; }
+  function fmt(n) { return (Math.round(n * 10) / 10).toString().replace(".", ","); }
+  function namesWith(pred) { return STUDENTS.filter(function (n) { return votes[n] != null && pred(votes[n]); }); }
+
+  function pkRender() {
+    var h = "";
+    STUDENTS.forEach(function (n, i) {
+      var v = votes[n], card, st;
+      if (revealed && v != null) { card = '<span class="pcard face v' + v + '">' + v + "</span>"; st = label(v); }
+      else if (v != null) { card = '<span class="pcard back" aria-hidden="true"></span>'; st = "Ya votó"; }
+      else { card = '<span class="pcard empty" aria-hidden="true"></span>'; st = revealed ? "Sin voto" : "Pendiente"; }
+      h += '<button type="button" class="stu' + (v != null && !revealed ? " voted" : "") + (turn === n ? " turn" : "") + '" data-i="' + i + '"' + (revealed ? " disabled" : "") + ">" + card + "<b>" + n + "</b><small>" + st + "</small></button>";
+    });
+    $("pk-stus").innerHTML = h;
+    // turno
+    if (turn !== null && !revealed) {
+      var d = "";
+      DECK.forEach(function (c) { d += '<button type="button" class="dk" data-v="' + c.v + '"><span class="num">' + c.v + '</span><span class="lab2">' + c.t + "</span></button>"; });
+      $("pk-turn").innerHTML = '<div class="turn-panel"><h4>Turno de ' + turn + '</h4><p style="margin:0;font-size:.9rem;">Elige tu carta. Al tocarla se voltea boca abajo y los demás no la ven.</p><div class="deck">' + d + '</div><div class="btn-row" style="justify-content:center;"><button type="button" class="btn ghost sm" id="pk-cancel">Cancelar</button></div></div>';
+      $("pk-cancel").addEventListener("click", function () { turn = null; pkRender(); });
+      Array.prototype.forEach.call($("pk-turn").querySelectorAll(".dk"), function (b) {
+        b.addEventListener("click", function () { votes[turn] = +b.getAttribute("data-v"); turn = null; pkRender(); });
+      });
+    } else $("pk-turn").innerHTML = "";
+    var voted = Object.keys(votes).length;
+    $("pk-reveal").disabled = revealed || voted === 0 || turn !== null;
+    $("pk-reveal").textContent = revealed ? "Votos revelados" : (voted === STUDENTS.length ? "Revelar votos" : "Revelar votos (" + voted + " de " + STUDENTS.length + ")");
+    $("pk-new").hidden = !revealed;
+    // historial
+    var r = ""; rounds.forEach(function (x) { r += "<li><strong>Ronda " + x.n + ":</strong> mediana " + fmt(x.med) + " · " + x.name + "</li>"; });
+    $("pk-rounds").innerHTML = r;
+  }
+  $("pk-stus").addEventListener("click", function (e) {
+    var b = e.target.closest(".stu"); if (!b || revealed) return;
+    turn = STUDENTS[+b.getAttribute("data-i")]; pkRender();
+  });
+  $("pk-reveal").addEventListener("click", function () {
+    var vs = STUDENTS.filter(function (n) { return votes[n] != null; }).map(function (n) { return votes[n]; }).sort(function (a, b) { return a - b; });
+    if (!vs.length) return;
+    revealed = true; turn = null;
+    var k = vs.length, med = k % 2 ? vs[(k - 1) / 2] : (vs[k / 2 - 1] + vs[k / 2]) / 2;
+    var avg = vs.reduce(function (s, x) { return s + x; }, 0) / k, mn = vs[0], mx = vs[k - 1], spread = mx - mn;
+    var low = namesWith(function (x) { return x <= 2; }), minN = namesWith(function (x) { return x === mn; }), maxN = namesWith(function (x) { return x === mx; }), threes = namesWith(function (x) { return x === 3; });
+    var missing = STUDENTS.filter(function (n) { return votes[n] == null; });
+    var kind, title, vt, body;
+    if (low.length) {
+      kind = "red"; vt = "Decisión: no avanzar todavía"; title = "Reforzar antes de seguir";
+      body = "<p><strong>" + list(low) + "</strong> votó" + (low.length > 1 ? "ron" : "") + " 1 o 2. Pide que diga cuál de los tres pasos no ve claro (preguntar la ida, preguntar la vuelta o cruzar el número) y resuelvan juntos un caso más.</p><p>Después, <strong>nueva ronda</strong>.</p>";
+    } else if (med < 5 || spread >= 5) {
+      kind = "yellow"; vt = "Decisión: un ejemplo más y votar de nuevo";
+      if (spread >= 5) { title = "Hay dos lecturas distintas"; body = "<p>Voto más alto, <strong>" + list(maxN) + "</strong>: explica en 30 segundos cómo lo ve. Voto más bajo, <strong>" + list(minN) + "</strong>: dice qué parte no queda clara. Luego resuelvan un ejemplo más y hagan <strong>nueva ronda</strong>.</p>"; }
+      else { title = "El grupo está a medias"; body = "<p>La mediana es " + fmt(med) + ". Resuelvan un ejemplo más, en voz alta y con los dos sentidos, y hagan <strong>nueva ronda</strong>.</p>"; }
+    } else {
+      kind = "green"; vt = "Decisión: podemos avanzar"; title = "Tema cerrado";
+      body = "<p>Nadie votó por debajo de 3 y la mediana es " + fmt(med) + ". El grupo puede pasar al siguiente tema.</p>" + (threes.length ? "<p>Antes de cerrar, confirma con <strong>" + list(threes) + "</strong> (votó 3) si le queda una duda pendiente.</p>" : "");
+    }
+    if (missing.length) body += "<p>Sin voto: " + list(missing) + ".</p>";
+    var dist = "";
+    DECK.forEach(function (c) {
+      var ns = namesWith(function (x) { return x === c.v; }), chips = "";
+      ns.forEach(function (n) { chips += '<span class="nchip">' + n + "</span>"; });
+      dist += '<div class="dcol"><span class="hd">' + c.v + '</span><span class="cap">' + c.t + "</span>" + chips + "</div>";
+    });
+    $("pk-res").innerHTML = '<div class="dist">' + dist + "</div>" +
+      '<div class="stats4"><div class="st">Mediana<b>' + fmt(med) + '</b></div><div class="st">Promedio<b>' + fmt(avg) + '</b></div><div class="st">Voto más bajo<b>' + mn + "</b><small>" + list(minN) + '</small></div><div class="st">Voto más alto<b>' + mx + "</b><small>" + list(maxN) + "</small></div></div>" +
+      '<div class="vd ' + kind + '"><span class="vt">' + vt + "</span><h4>" + title + "</h4>" + body + "</div>";
+    rounds.push({ n: rounds.length + 1, med: med, name: kind === "green" ? "verde (avanzar)" : (kind === "yellow" ? "amarillo (revotar)" : "rojo (reforzar)") });
+    pkRender();
+  });
+  $("pk-new").addEventListener("click", function () { votes = {}; turn = null; revealed = false; $("pk-res").innerHTML = ""; pkRender(); });
+  $("pk-reset").addEventListener("click", function () { votes = {}; turn = null; revealed = false; rounds = []; $("pk-res").innerHTML = ""; pkRender(); });
+  pkRender();
+
+  /* ============================================================
+     Cronómetro
+     ============================================================ */
+  var TOTAL = 900, CUTS = [0, 120, 600, 900], NB = 3;
+  var elapsed = 0, timer = null, t0 = 0, base = 0, lastB = -1;
+  function fmtT(s) { var m = Math.floor(s / 60), r = s % 60; return (m < 10 ? "0" : "") + m + ":" + (r < 10 ? "0" : "") + r; }
+  function blockOf(s) { for (var i = 0; i < NB; i++) if (s < CUTS[i + 1]) return i; return NB - 1; }
+  function tUpdate() {
+    var rem = Math.max(0, TOTAL - elapsed), b = blockOf(Math.min(elapsed, TOTAL - 1)), started = elapsed > 0 || timer;
+    $("clock").firstChild.nodeValue = fmtT(rem);
+    $("clock").classList.toggle("warn", rem <= 60);
+    $("clock-lbl").textContent = rem === 0 ? "Tiempo cumplido" : (timer ? "Tiempo restante" : (elapsed ? "En pausa" : "Tiempo restante"));
+    Array.prototype.forEach.call(document.querySelectorAll(".chip-b"), function (c, i) {
+      c.classList.toggle("on", !!started && i === b && rem > 0);
+      c.classList.toggle("done", !!started && (i < b || rem === 0));
+    });
+    if (b !== lastB && started) { lastB = b; if ($("t-auto").checked && timer) { var el = $("b" + (b + 1)); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); } }
+  }
+  function tTick() { elapsed = base + Math.floor((Date.now() - t0) / 1000); if (elapsed >= TOTAL) { elapsed = TOTAL; tStop(); } tUpdate(); }
+  function tStop() { if (timer) { clearInterval(timer); timer = null; } $("t-go").textContent = elapsed >= TOTAL ? "Terminado" : (elapsed ? "Continuar" : "Iniciar"); $("t-go").disabled = elapsed >= TOTAL; }
+  $("t-go").addEventListener("click", function () {
+    if (timer) { tStop(); tUpdate(); return; }
+    if (elapsed >= TOTAL) return;
+    base = elapsed; t0 = Date.now(); timer = setInterval(tTick, 250); $("t-go").textContent = "Pausar"; tUpdate();
+  });
+  $("t-reset").addEventListener("click", function () { tStop(); elapsed = 0; base = 0; lastB = -1; $("t-go").disabled = false; $("t-go").textContent = "Iniciar"; tUpdate(); });
+  tUpdate();
+})();
+</script>
+</body>
+</html>
