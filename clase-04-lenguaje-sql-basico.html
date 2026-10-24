@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clase 4 — Lenguaje SQL Básico</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  :root { --ida: #490b58; --vuelta: #B45F06; --ida-soft: #F5E8EE; --ok: #1F5B2B; --bad: #8C1D18; --code-bg: #1F1A26; --code-fg: #F2EDF6; }
+  html { scroll-behavior: smooth; }
+  .section { scroll-margin-top: 70px; }
+  .page-wrapper h3 { margin-top: 1.5rem; }
+  code { font-family: var(--font-mono); font-size: .86em; background: var(--surface); padding: .05rem .3rem; border-radius: 3px; }
+  .mixtle-card { display: flex; gap: 1.5rem; align-items: center; }
+  .mixtle-card img { width: 110px; flex-shrink: 0; }
+  @media (max-width: 600px) { .mixtle-card { flex-direction: column; text-align: center; } }
+  .mixtle-tip { display: flex; gap: .9rem; align-items: center; margin: 1.2rem 0; }
+  .mixtle-tip img { width: 72px; flex-shrink: 0; }
+  .table-scroll { overflow-x: auto; margin: 1rem 0; }
+  .table-scroll table { margin: 0; }
+
+  /* ---------- Botones ---------- */
+  .btn { font-family: var(--font-ui); font-size: .82rem; font-weight: 600; cursor: pointer; border: 1.5px solid var(--guinda); background: var(--guinda); color: #fff; padding: .5rem 1rem; border-radius: var(--radius-md); transition: background .15s, color .15s; text-decoration: none; display: inline-block; }
+  .btn:hover { background: var(--guinda-dark); text-decoration: none; color: #fff; }
+  .btn.ghost { background: #fff; color: var(--guinda); }
+  .btn.ghost:hover { background: var(--guinda-light); color: var(--guinda); }
+  .btn.sm { padding: .32rem .7rem; font-size: .75rem; }
+  .btn.danger { border-color: #B3261E; color: #B3261E; background: #fff; }
+  .btn.danger:hover { background: #FDECEA; color: #B3261E; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, .tok:focus-visible, .nav-pill:focus-visible { outline: 3px solid var(--guinda-rule); outline-offset: 2px; }
+  .btn-row { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .9rem; align-items: center; }
+  .hint-line { font-family: var(--font-ui); font-size: .8rem; color: var(--ink-secondary); margin: .4rem 0; }
+
+  /* ---------- Navegación de la clase ---------- */
+  .nav-bar { position: sticky; top: 0; z-index: 50; background: #fff; border-bottom: 2px solid var(--guinda); box-shadow: 0 3px 10px rgba(73,11,88,.1); }
+  .nav-in { max-width: 1000px; margin: 0 auto; padding: .45rem 1rem; display: flex; gap: .4rem; overflow-x: auto; scrollbar-width: thin; }
+  .nav-pill { flex-shrink: 0; font-family: var(--font-ui); font-size: .74rem; font-weight: 600; text-decoration: none; color: var(--ink-secondary); background: var(--off-white); border: 1.5px solid var(--border-strong); border-radius: 999px; padding: .3rem .8rem; white-space: nowrap; }
+  .nav-pill:hover { background: var(--guinda-light); text-decoration: none; }
+  .nav-pill.on { background: var(--guinda); border-color: var(--guinda); color: #fff; }
+
+  /* ---------- Encabezado de bloque ---------- */
+  .blk-head { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.1rem; padding-bottom: .7rem; border-bottom: 1.5px solid var(--guinda-rule); }
+  .blk-n { flex-shrink: 0; min-width: 3rem; height: 3rem; padding: 0 .4rem; border-radius: 999px; background: var(--guinda); color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; }
+  .blk-head h2 { margin: 0; color: var(--guinda); font-size: 1.55rem; }
+  .blk-time { font-family: var(--font-ui); font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--guinda-mid); display: block; margin-bottom: .1rem; }
+
+  /* ---------- Agenda ---------- */
+  .agenda { display: grid; grid-template-columns: repeat(4, 1fr); gap: .7rem; margin: 1rem 0; }
+  @media (max-width: 860px) { .agenda { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .agenda { grid-template-columns: 1fr; } }
+  .ag { display: block; text-decoration: none; background: #fff; border: 1px solid var(--border); border-top: 4px solid var(--guinda); border-radius: var(--radius-md); padding: .7rem .85rem; box-shadow: var(--shadow-sm); color: var(--ink); }
+  .ag:hover { background: var(--guinda-light); text-decoration: none; }
+  .ag b { font-family: var(--font-ui); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--guinda-mid); display: block; }
+  .ag span { font-family: var(--font-ui); font-size: .88rem; font-weight: 600; color: var(--guinda-dark); }
+  .ag small { display: block; font-family: var(--font-ui); font-size: .72rem; color: var(--ink-secondary); margin-top: .15rem; }
+
+  /* ---------- Código ---------- */
+  .codeblock { position: relative; margin: .8rem 0; }
+  .codeblock pre { margin: 0; background: var(--code-bg); color: var(--code-fg); border-radius: var(--radius-md); padding: 2.1rem 1rem .9rem; overflow-x: auto; font-family: var(--font-mono); font-size: .82rem; line-height: 1.55; tab-size: 2; }
+  .codeblock .cb-tag { position: absolute; top: .45rem; left: .8rem; font-family: var(--font-ui); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: #BFA9CB; }
+  .codeblock .cb-copy { position: absolute; top: .35rem; right: .5rem; font-family: var(--font-ui); font-size: .68rem; font-weight: 600; cursor: pointer; background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.35); border-radius: 6px; padding: .18rem .6rem; }
+  .codeblock .cb-copy:hover { background: rgba(255,255,255,.25); }
+  .k { color: #F0A8D8; font-weight: 700; } .s { color: #A8E0A0; } .n { color: #F5C76A; } .c { color: #9A8BA6; font-style: italic; } .t { color: #8FCBF2; }
+
+  /* ---------- Tarjetas de sentencia ---------- */
+  .stm-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; margin: 1rem 0; }
+  @media (max-width: 860px) { .stm-grid { grid-template-columns: 1fr; } }
+  .stm { min-width: 0; overflow: hidden; background: #fff; border: 1px solid var(--border); border-top: 4px solid var(--guinda); border-radius: var(--radius-md); padding: .8rem .9rem .5rem; box-shadow: var(--shadow-sm); }
+  .stm h4 { margin: 0 0 .15rem; color: var(--guinda); font-family: var(--font-mono); font-size: 1rem; }
+  .stm p { font-size: .88rem; margin: .1rem 0 .3rem; color: var(--ink-secondary); }
+  .stm .codeblock { margin: .4rem 0; min-width: 0; } .stm .codeblock pre { white-space: pre-wrap; word-break: break-word; overflow-x: auto; } .stm .codeblock pre { font-size: .74rem; padding: 1.9rem .7rem .6rem; }
+
+  .big-rule { border: 3px solid var(--guinda); border-radius: var(--radius-lg); padding: 1rem 1.3rem; background: var(--ida-soft); margin: 1.3rem 0; text-align: center; }
+  .big-rule b { font-family: var(--font-ui); font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; color: var(--guinda-mid); display: block; margin-bottom: .3rem; }
+  .big-rule p { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.3; margin: 0; color: var(--guinda); font-weight: 600; }
+  .warn-box { border-left: 5px solid #B3261E; background: #FDECEA; padding: .75rem 1.1rem; border-radius: 0 var(--radius-md) var(--radius-md) 0; font-size: .93rem; margin: 1rem 0; color: #5E1410; }
+  .tip-box { border-left: 5px solid var(--guinda); background: #FFFDF7; padding: .75rem 1.1rem; border-radius: 0 var(--radius-md) var(--radius-md) 0; font-size: .93rem; margin: 1rem 0; }
+
+  /* ---------- Pipeline ---------- */
+  .pipe { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; gap: .4rem; align-items: stretch; margin: 1.2rem 0; }
+  @media (max-width: 860px) { .pipe { grid-template-columns: 1fr; } .pipe .arw { transform: rotate(90deg); justify-self: center; } }
+  .pp { background: #fff; border: 2px solid var(--guinda); border-radius: var(--radius-md); padding: .7rem .6rem; text-align: center; font-family: var(--font-ui); }
+  .pp .u { font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; color: var(--guinda-mid); font-weight: 700; display: block; }
+  .pp b { display: block; font-size: .92rem; color: var(--guinda-dark); margin: .1rem 0; }
+  .pp small { font-size: .72rem; color: var(--ink-secondary); display: block; line-height: 1.3; }
+  .pp.now { background: var(--guinda); } .pp.now .u, .pp.now b, .pp.now small { color: #fff; }
+  .arw { display: flex; align-items: center; justify-content: center; color: var(--guinda); font-size: 1.6rem; font-weight: 700; }
+  .reach { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7rem; }
+  @media (max-width: 700px) { .reach { grid-template-columns: 1fr; } }
+
+  /* ---------- Laboratorios ---------- */
+  .lab { border: 2px solid var(--guinda); border-radius: var(--radius-lg); background: #fff; margin: 1.5rem 0; overflow: hidden; box-shadow: var(--shadow-md); }
+  .lab-head { background: var(--guinda); color: #fff; padding: .65rem 1.2rem; display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; font-family: var(--font-ui); }
+  .lab-head .tag { font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; background: rgba(255,255,255,.2); padding: .18rem .65rem; border-radius: 999px; }
+  .lab-head h3 { margin: 0 !important; color: #fff; font-family: var(--font-ui); font-size: 1rem; font-weight: 600; }
+  .lab-body { padding: 1.1rem 1.3rem 1.3rem; }
+  .lab-intro { font-size: .95rem; margin-bottom: .8rem; }
+  @media (max-width: 640px) { .lab-body { padding: 1rem .9rem 1.1rem; } }
+  .fb { margin-top: .8rem; padding: .8rem 1rem; border-radius: var(--radius-md); font-size: .93rem; }
+  .fb.ok { background: #EAF5EC; border: 1px solid #A9D3B0; color: var(--ok); }
+  .fb.no { background: #FDECEA; border: 1px solid #E8B4AF; color: var(--bad); }
+  .fb.info { background: var(--off-white); border: 1px solid var(--border); color: var(--ink-secondary); }
+  .fb p { margin: .2rem 0; font-size: .92rem; }
+  .fb b { font-family: var(--font-ui); }
+  .qz-top { display: flex; justify-content: space-between; font-family: var(--font-ui); font-size: .8rem; color: var(--ink-secondary); margin-bottom: .45rem; }
+  .qz-bar { height: 8px; background: var(--border); border-radius: 999px; overflow: hidden; margin-bottom: .9rem; }
+  .qz-bar i { display: block; height: 100%; background: var(--guinda); transition: width .3s; }
+  .qz-q { font-size: 1rem; margin: .5rem 0; }
+  .opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; margin-top: .8rem; }
+  @media (max-width: 700px) { .opts, .opts.opts3 { grid-template-columns: 1fr; } }
+  .opts.opts3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .opt { text-align: left; cursor: pointer; font-family: var(--font-ui); background: #fff; border: 1.5px solid var(--border-strong); border-radius: var(--radius-md); padding: .65rem .85rem; font-size: .86rem; color: var(--ink); line-height: 1.35; }
+  .opt:hover:not(:disabled) { background: var(--guinda-light); border-color: var(--guinda); }
+  .opt.right { background: #EAF5EC; border-color: #4C9A5B; }
+  .opt.wrong { background: #FDECEA; border-color: #B3261E; }
+  .opt:disabled { cursor: default; }
+  .qz-end { text-align: center; padding: .8rem .5rem; }
+  .qz-end .score { font-family: var(--font-display); font-size: 3rem; color: var(--guinda); line-height: 1.1; }
+  .qcode { margin: .5rem 0; } .qcode .codeblock { margin: .3rem 0; }
+
+  /* ---------- Anatomía clicable ---------- */
+  .anat { display: grid; grid-template-columns: 1.25fr 1fr; gap: 1rem; align-items: start; }
+  @media (max-width: 860px) { .anat { grid-template-columns: 1fr; } }
+  .anat pre { margin: 0; background: var(--code-bg); color: var(--code-fg); border-radius: var(--radius-md); padding: 1rem; overflow-x: auto; font-family: var(--font-mono); font-size: .84rem; line-height: 1.85; }
+  .tok { cursor: pointer; border-bottom: 2px dotted #F0A8D8; padding: 0 1px; border-radius: 3px; transition: background .15s; }
+  .tok:hover { background: rgba(240,168,216,.25); }
+  .tok.on { background: #F0A8D8; color: #1F1A26; border-bottom-color: #F0A8D8; }
+  .anat-panel { border: 2px solid var(--guinda); border-radius: var(--radius-lg); padding: .9rem 1.1rem; background: #fff; min-height: 14rem; }
+  .anat-panel h4 { margin: 0 0 .3rem; color: var(--guinda); font-family: var(--font-mono); font-size: 1rem; }
+  .anat-panel p { font-size: .92rem; margin: .3rem 0; }
+  .anat-panel .err { font-family: var(--font-mono); font-size: .78rem; background: #FDECEA; color: var(--bad); border-radius: 6px; padding: .35rem .6rem; display: block; margin-top: .4rem; }
+  .tokchips { display: flex; gap: .35rem; flex-wrap: wrap; margin-top: .7rem; }
+  .tokchips button { font-family: var(--font-ui); font-size: .7rem; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border-strong); background: var(--off-white); border-radius: 999px; padding: .22rem .65rem; color: var(--ink-secondary); }
+  .tokchips button.on { background: var(--guinda); color: #fff; border-color: var(--guinda); }
+
+  /* ---------- Constructor de consultas ---------- */
+  .qb { display: grid; grid-template-columns: 1fr 1.2fr; gap: 1rem; }
+  @media (max-width: 900px) { .qb { grid-template-columns: 1fr; } }
+  .qb fieldset { border: 1px solid var(--border); border-radius: var(--radius-md); padding: .6rem .8rem .7rem; margin: 0 0 .7rem; background: var(--off-white); }
+  .qb legend { font-family: var(--font-ui); font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--guinda-mid); padding: 0 .3rem; }
+  .qb label.ck { font-family: var(--font-ui); font-size: .8rem; margin-right: .8rem; display: inline-flex; gap: .3rem; align-items: center; cursor: pointer; }
+  .qb .row select, .qb .row input { min-width: 0; max-width: 100%; }
+  .qb .row { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; margin: .3rem 0; }
+  select, input[type="text"], input[type="number"], textarea.ta { font-family: var(--font-ui); font-size: .82rem; padding: .35rem .5rem; border: 1.5px solid var(--border-strong); border-radius: 6px; background: #fff; color: var(--ink); }
+  input[type="text"], input[type="number"] { min-width: 0; }
+  .presets { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .8rem; }
+  .flow { display: flex; gap: .35rem; flex-wrap: wrap; align-items: center; font-family: var(--font-ui); font-size: .74rem; margin: .6rem 0; }
+  .flow span { background: var(--ida-soft); border: 1px solid var(--guinda-rule); border-radius: 999px; padding: .2rem .7rem; color: var(--guinda-dark); }
+  .flow i { font-style: normal; color: var(--guinda); font-weight: 700; }
+  table.res { width: 100%; border-collapse: collapse; font-family: var(--font-ui); font-size: .8rem; margin: .4rem 0; }
+  table.res th { background: var(--guinda); color: #fff; text-align: left; padding: .3rem .5rem; font-size: .72rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
+  table.res td { padding: .28rem .5rem; border-bottom: 1px solid var(--border); font-size: .8rem !important; }
+  table.res tr.out td { color: #B7A9BC; text-decoration: line-through; background: #FAF7FB; }
+  .res-wrap { overflow-x: auto; }
+
+  /* ---------- Mini tablas ---------- */
+  .mtwrap { display: flex; gap: 1.4rem; flex-wrap: wrap; align-items: center; margin: 1rem 0; }
+  .mt { border: 2px solid var(--guinda); border-radius: 8px; overflow: hidden; background: #fff; font-family: var(--font-ui); }
+  .mt .cap { background: var(--guinda); color: #fff; padding: .25rem .7rem; font-size: .76rem; font-weight: 700; }
+  .mt table { margin: 0; border-collapse: collapse; }
+  .mt th, .mt td { font-size: .74rem !important; padding: .22rem .6rem; border-bottom: 1px solid var(--border); text-align: left; text-transform: none; letter-spacing: 0; }
+  .mt th { background: var(--ida-soft); color: var(--guinda-dark); font-weight: 700; }
+  .mt .fk { background: #FFF4D6; font-weight: 700; color: #6B4600; }
+  .mt .pk { text-decoration: underline; }
+  .mt-arrow { font-family: var(--font-ui); font-size: .78rem; color: var(--guinda); text-align: center; font-weight: 700; }
+
+  /* ---------- Tabla de restricciones ---------- */
+  table.rules td, table.rules th { font-size: .86rem; }
+
+  /* ---------- Práctica guiada ---------- */
+  .envtabs { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .8rem; }
+  .envbtn { font-family: var(--font-ui); font-size: .78rem; font-weight: 600; cursor: pointer; background: var(--off-white); color: var(--ink-secondary); border: 1.5px solid var(--border-strong); padding: .4rem .85rem; border-radius: 999px; }
+  .envbtn[aria-selected="true"] { background: var(--guinda); color: #fff; border-color: var(--guinda); }
+  .envpanel ol { margin: .4rem 0 .4rem 1.2rem; } .envpanel li { margin-bottom: .3rem; font-size: .92rem; }
+  .prog { display: flex; align-items: center; gap: .7rem; font-family: var(--font-ui); font-size: .8rem; color: var(--ink-secondary); margin: .8rem 0 .5rem; }
+  .prog .qz-bar { flex: 1; margin: 0; }
+  .step { border: 1.5px solid var(--border-strong); border-radius: var(--radius-md); background: #fff; margin-bottom: .6rem; overflow: hidden; }
+  .step.done { border-color: #4C9A5B; }
+  .step > summary { list-style: none; cursor: pointer; display: flex; gap: .7rem; align-items: center; padding: .65rem .9rem; font-family: var(--font-ui); }
+  .step > summary::-webkit-details-marker { display: none; }
+  .step .sn { width: 1.9rem; height: 1.9rem; border-radius: 50%; background: var(--guinda); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .85rem; flex-shrink: 0; }
+  .step.done .sn { background: #3E9B52; }
+  .step .st-t { font-weight: 700; font-size: .92rem; color: var(--guinda-dark); flex: 1; }
+  .step .st-tag { font-size: .66rem; letter-spacing: .08em; text-transform: uppercase; background: var(--guinda-light); color: var(--guinda-dark); border-radius: 999px; padding: .12rem .6rem; font-weight: 700; }
+  .step .st-body { padding: .2rem 1rem 1rem; border-top: 1px solid var(--border); }
+  .step .st-body p { font-size: .92rem; }
+  .step label.done-ck { font-family: var(--font-ui); font-size: .8rem; display: inline-flex; gap: .4rem; align-items: center; cursor: pointer; margin-top: .4rem; }
+  .expect { border-left: 5px solid #3E9B52; background: #EAF5EC; padding: .6rem .9rem; border-radius: 0 var(--radius-md) var(--radius-md) 0; font-size: .9rem; color: var(--ok); margin: .6rem 0; }
+  .expect b { font-family: var(--font-ui); font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; display: block; }
+
+  /* ---------- Taller del proyecto ---------- */
+  .hl { padding: .05rem .35rem; border-radius: 4px; font-weight: 600; }
+  .hl.e { background: #F5E8EE; color: var(--ida); border: 1px solid var(--ida); }
+  .hl.r { background: #FDF1E3; color: var(--vuelta); border: 1px solid var(--vuelta); }
+  .hl.a { background: #E6F0FB; color: #1B4F8A; border: 1px solid #1B4F8A; }
+  .legend3 { display: flex; gap: .8rem; flex-wrap: wrap; margin: .6rem 0; font-family: var(--font-ui); font-size: .78rem; }
+  .qgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7rem; margin: 1rem 0; }
+  @media (max-width: 860px) { .qgrid { grid-template-columns: 1fr; } }
+  .qc { background: #fff; border: 1px solid var(--border); border-top: 4px solid var(--guinda-rule); border-radius: var(--radius-md); padding: .7rem .9rem; }
+  .qc h4 { margin: 0 0 .2rem; color: var(--guinda-dark); font-size: .95rem; }
+  .qc p { margin: 0; font-size: .86rem; color: var(--ink-secondary); }
+
+  .cv-top { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; margin-bottom: .8rem; }
+  @media (max-width: 700px) { .cv-top { grid-template-columns: 1fr; } }
+  .cv-top label, .fld { font-family: var(--font-ui); font-size: .72rem; font-weight: 700; color: var(--guinda-mid); letter-spacing: .06em; text-transform: uppercase; display: block; }
+  .cv-top input { width: 100%; margin-top: .2rem; text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .cv-bar { display: flex; gap: .5rem; flex-wrap: wrap; margin: .6rem 0 1rem; }
+  .cv-cols { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1rem; align-items: start; }
+  @media (max-width: 960px) { .cv-cols { grid-template-columns: 1fr; } }
+  .panel-t { font-family: var(--font-ui); font-size: .78rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--guinda); margin: 0 0 .5rem; }
+  .ent { border: 2px solid var(--guinda); border-radius: var(--radius-md); background: #fff; margin-bottom: .7rem; overflow: hidden; }
+  .ent-h { display: flex; gap: .5rem; align-items: center; background: var(--ida-soft); padding: .45rem .7rem; }
+  .ent-h input { flex: 1; font-weight: 700; color: var(--guinda-dark); }
+  .ent-b { padding: .4rem .7rem .6rem; overflow-x: auto; }
+  .att { display: grid; grid-template-columns: minmax(110px, 1.4fr) minmax(104px, 1fr) repeat(3, 2.6rem) 1.8rem; gap: .3rem; align-items: center; margin: .25rem 0; min-width: 440px; }
+  .att.hd { font-family: var(--font-ui); font-size: .62rem; font-weight: 700; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .06em; }
+  .att input[type="text"] { width: 100%; }
+  .att select { width: 100%; }
+  .att .ckc { text-align: center; }
+  .xbtn { width: 1.8rem; height: 1.8rem; border-radius: 50%; border: 1.5px solid var(--border-strong); background: #fff; cursor: pointer; font-weight: 700; color: var(--ink-secondary); line-height: 1; }
+  .xbtn:hover { background: #FDECEA; border-color: #B3261E; color: #B3261E; }
+  .rel { border: 2px solid var(--vuelta); border-radius: var(--radius-md); background: #fff; margin-bottom: .7rem; padding: .6rem .8rem; }
+  .rel .row { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; font-family: var(--font-ui); font-size: .82rem; margin: .25rem 0; }
+  .rel .tipo { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; color: var(--guinda); background: var(--ida-soft); padding: .05rem .6rem; border-radius: 999px; }
+  .rel .rd { font-size: .8rem; color: var(--ink-secondary); font-family: var(--font-ui); border-left: 4px solid; padding-left: .5rem; margin: .2rem 0; }
+  .rel .rd.i { border-color: var(--ida); } .rel .rd.v { border-color: var(--vuelta); }
+  .rel .rd b { font-size: .64rem; letter-spacing: .08em; }
+  .rel .rd.i b { color: var(--ida); } .rel .rd.v b { color: var(--vuelta); }
+  .rel .fkinfo { font-family: var(--font-ui); font-size: .76rem; color: #6B4600; background: #FFF4D6; border-radius: 6px; padding: .25rem .55rem; display: inline-block; margin-top: .2rem; }
+  .rel .xbtn { margin-left: auto; }
+  .cv-diagram { background: var(--off-white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: .5rem; overflow: auto; max-height: 640px; }
+  .cv-diagram svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+  .viewtabs { display: flex; gap: .4rem; margin-bottom: .5rem; }
+  .vt { font-family: var(--font-ui); font-size: .74rem; font-weight: 600; cursor: pointer; background: #fff; color: var(--ink-secondary); border: 1.5px solid var(--border-strong); padding: .3rem .8rem; border-radius: 999px; }
+  .vt[aria-selected="true"] { background: var(--guinda); border-color: var(--guinda); color: #fff; }
+  .d-box { fill: #fff; stroke: var(--guinda); stroke-width: 2; }
+  .d-head { fill: var(--guinda); }
+  .d-title { font-family: var(--font-ui); font-size: 13px; font-weight: 700; fill: #fff; text-anchor: middle; }
+  .d-att { font-family: var(--font-mono); font-size: 11.5px; fill: var(--ink); }
+  .d-att.pk { font-weight: 700; text-decoration: underline; }
+  .d-att.fk { fill: #8A5A00; font-weight: 700; }
+  .d-tag { font-family: var(--font-ui); font-size: 9px; font-weight: 700; fill: var(--ink-muted); text-anchor: end; }
+  .d-link { stroke: var(--guinda-rule); stroke-width: 2.5; fill: none; }
+  .d-num circle { fill: #fff; stroke: var(--guinda); stroke-width: 2; }
+  .d-num text { font-family: var(--font-ui); font-size: 13px; font-weight: 700; fill: var(--guinda); text-anchor: middle; }
+  .d-note { font-family: var(--font-ui); font-size: 11px; fill: var(--ink-secondary); text-anchor: middle; }
+  .chk { list-style: none; padding: 0; margin: .5rem 0; font-family: var(--font-ui); font-size: .84rem; }
+  .chk li { padding: .3rem .6rem; border-left: 5px solid var(--border-strong); background: var(--off-white); margin-bottom: .25rem; border-radius: 0 6px 6px 0; color: var(--ink-secondary); }
+  .chk li.ok { border-color: #3E9B52; background: #EAF5EC; color: var(--ok); }
+  .chk li::before { content: "\25CB  "; font-weight: 700; }
+  .chk li.ok::before { content: "\2713  "; }
+  .sqlout { margin-top: 1rem; }
+  .sqlopts { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; font-family: var(--font-ui); font-size: .8rem; margin: .4rem 0; }
+  .sqlopts label { display: inline-flex; gap: .3rem; align-items: center; cursor: pointer; }
+  .empty-msg { font-family: var(--font-ui); font-size: .85rem; color: var(--ink-secondary); padding: 1rem; text-align: center; }
+  .toast { position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%); background: var(--guinda-dark); color: #fff; font-family: var(--font-ui); font-size: .82rem; padding: .5rem 1rem; border-radius: 999px; box-shadow: var(--shadow-md); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 100; }
+  .toast.show { opacity: 1; }
+
+  /* ---------- Cierre ---------- */
+  .retos { display: grid; grid-template-columns: repeat(2, 1fr); gap: .8rem; }
+  @media (max-width: 760px) { .retos { grid-template-columns: 1fr; } }
+  .reto { border: 1.5px solid var(--border-strong); border-radius: var(--radius-md); background: #fff; padding: .8rem 1rem; }
+  .reto h4 { margin: 0 0 .3rem; color: var(--guinda); font-size: 1rem; }
+  .reto p { font-size: .9rem; margin: .2rem 0; }
+  .reto details { margin-top: .4rem; } .reto summary { cursor: pointer; font-family: var(--font-ui); font-size: .8rem; font-weight: 700; color: var(--guinda-mid); }
+  .reto .exp { font-family: var(--font-ui); font-size: .78rem; color: var(--ink-secondary); }
+  .daily3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; margin: 1rem 0; }
+  @media (max-width: 760px) { .daily3 { grid-template-columns: 1fr; } }
+  .dq { background: var(--off-white); border: 1px solid var(--border); border-top: 4px solid var(--guinda-rule); border-radius: var(--radius-md); padding: .85rem 1rem; }
+  .dq h4 { color: var(--guinda-dark); font-size: .95rem; margin-bottom: .25rem; }
+  .dq p { font-size: .88rem; margin: 0; color: var(--ink-secondary); }
+  .prod { border: 3px solid var(--guinda); border-radius: var(--radius-lg); background: #fff; padding: 1rem 1.3rem; margin: 1.3rem 0; box-shadow: var(--shadow-md); }
+  .prod h3 { margin: 0 0 .4rem !important; color: var(--guinda); font-size: 1.15rem; }
+  .prod ul { margin: .3rem 0 .3rem 1.1rem; } .prod li { font-size: .92rem; margin-bottom: .25rem; }
+  @media print { .nav-bar, .btn, .cv-bar { display: none; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo-wrap"><img src="imagen1.png" alt="Logotipo IEDEP"></div>
+  <div class="header-text">
+    <span class="inst-name">Instituto de Educación Digital del Estado de Puebla</span>
+    <span class="doc-title">Material de clase · Licenciatura en Sistemas Computacionales</span>
+  </div>
+</header>
+
+<section class="class-hero">
+  <span class="class-label">Clase 4 · Unidad 4</span>
+  <h1>Lenguaje SQL básico: del esquema en papel a una base de datos real</h1>
+  <span class="class-subtitle">Crear estructuras, manipular datos, consultarlos y poner las bases técnicas del proyecto integrador</span>
+  <div class="meta-row">
+    <div class="meta-item">Programa educativo<span>Lic. en Sistemas Computacionales</span></div>
+    <div class="meta-item">Asignatura<span>Bases de Datos I</span></div>
+    <div class="meta-item">Unidad<span>4 · Lenguaje SQL Básico</span></div>
+    <div class="meta-item">Temas<span>4.1 DDL · 4.2 DML · 4.3 SELECT · 4.4 Restricciones y llaves</span></div>
+    <div class="meta-item">Fecha<span>Sábado 24 de octubre de 2026</span></div>
+  </div>
+</section>
+
+<nav class="nav-bar" aria-label="Secciones de la clase">
+  <div class="nav-in" id="nav">
+    <a class="nav-pill" href="#inicio">Inicio</a>
+    <a class="nav-pill" href="#ddl">4.1 DDL</a>
+    <a class="nav-pill" href="#dml">4.2 DML</a>
+    <a class="nav-pill" href="#select">4.3 SELECT</a>
+    <a class="nav-pill" href="#llaves">4.4 Llaves</a>
+    <a class="nav-pill" href="#practica">Práctica guiada</a>
+    <a class="nav-pill" href="#proyecto">Proyecto integrador</a>
+    <a class="nav-pill" href="#cierre">Cierre</a>
+  </div>
+</nav>
+
+<main class="page-wrapper">
+
+  <section class="section" style="margin-top:2rem;">
+    <h2 class="section-title">Competencias a desarrollar</h2>
+    <div class="competency-card">
+      <span class="comp-num">01</span>
+      <span class="comp-text"><strong>Implementar</strong> estructuras de bases de datos con sentencias DDL (CREATE, ALTER, DROP), aplicando tipos de datos, restricciones y llaves que garanticen la integridad de la información.</span>
+    </div>
+    <div class="competency-card">
+      <span class="comp-num">02</span>
+      <span class="comp-text"><strong>Manipular y consultar</strong> datos con sentencias DML (INSERT, UPDATE, DELETE) y consultas SELECT con condiciones, ordenamiento y límites.</span>
+    </div>
+    <div class="competency-card">
+      <span class="comp-num">03</span>
+      <span class="comp-text"><strong>Traducir</strong> un diagrama entidad-relación a un esquema relacional y a un script SQL, y plasmar con ello las bases técnicas del proyecto integrador del equipo.</span>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="card mixtle-card">
+      <img src="imagen2.png" alt="Mixtle, guía de la clase">
+      <div>
+        <span class="card-title">Hoy la base de datos deja de ser un dibujo</span>
+        <p>En las clases anteriores diseñamos: diagramas entidad-relación, cardinalidades, normalización. Hoy lo <strong>construimos de verdad</strong>. Vas a escribir sentencias, ejecutarlas y ver cómo la base de datos responde, incluso cuando le pides algo que sus reglas no permiten. Al final, con tus compañeros de equipo dejarás el primer diagrama y el primer script del proyecto integrador.</p>
+      </div>
+    </div>
+    <h3>Ruta de la clase</h3>
+    <div class="agenda">
+      <a class="ag" href="#inicio"><b>Inicio</b><span>La pregunta detonadora</span><small>Del diseño al SQL</small></a>
+      <a class="ag" href="#ddl"><b>4.1</b><span>DDL</span><small>CREATE, ALTER y DROP</small></a>
+      <a class="ag" href="#dml"><b>4.2</b><span>DML</span><small>INSERT, UPDATE y DELETE</small></a>
+      <a class="ag" href="#select"><b>4.3</b><span>SELECT</span><small>Consultas simples</small></a>
+      <a class="ag" href="#llaves"><b>4.4</b><span>Restricciones y llaves</span><small>Dónde va cada FK</small></a>
+      <a class="ag" href="#practica"><b>Práctica</b><span>Réplica guiada</span><small>DB Fiddle o DB Browser</small></a>
+      <a class="ag" href="#proyecto"><b>Taller</b><span>Proyecto integrador</span><small>Diagrama + script</small></a>
+      <a class="ag" href="#cierre"><b>Cierre</b><span>SELECT con condiciones</span><small>Plenaria</small></a>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ INICIO ============ -->
+  <section class="section" id="inicio">
+    <div class="blk-head"><span class="blk-n">Inicio</span><div><span class="blk-time">Pregunta detonadora</span><h2>¿Cómo llevamos el esquema del papel a una base real?</h2></div></div>
+
+    <p>Ya tenemos un diagrama entidad-relación y un esquema relacional normalizado. Pero un dibujo no guarda datos, no rechaza errores y no responde preguntas. Para eso necesitamos un lenguaje que el sistema gestor de bases de datos (SGBD) entienda: <strong>SQL</strong>.</p>
+
+    <div class="pipe" aria-label="Ruta del diseño a la base de datos">
+      <div class="pp"><span class="u">Unidad 2</span><b>Diagrama ER</b><small>Entidades, relaciones y cardinalidad</small></div>
+      <div class="arw" aria-hidden="true">&rarr;</div>
+      <div class="pp"><span class="u">Unidad 3</span><b>Esquema relacional</b><small>Tablas, llaves y normalización</small></div>
+      <div class="arw" aria-hidden="true">&rarr;</div>
+      <div class="pp now"><span class="u">Hoy</span><b>Script SQL</b><small>CREATE TABLE, INSERT, SELECT</small></div>
+      <div class="arw" aria-hidden="true">&rarr;</div>
+      <div class="pp"><span class="u">Resultado</span><b>Base de datos real</b><small>Con datos y reglas que se cumplen</small></div>
+    </div>
+
+    <div class="mixtle-tip">
+      <img src="imagen2.png" alt="Mixtle">
+      <div class="callout" style="margin:0; flex:1;">
+        <p><strong>Analogía de Mixtle: el edificio.</strong> El diagrama es el <em>plano</em>. Con <strong>DDL</strong> levantas la construcción: muros, pisos y reglamento. Con <strong>DML</strong> la habitas: metes muebles, los cambias de lugar o los sacas. Con <strong>SELECT</strong> preguntas qué hay en cada cuarto sin mover nada. Si cambias el plano de un edificio ya habitado, es una obra; si cambias un mueble, es una mudanza. Por eso el SQL se divide en grupos.</p>
+      </div>
+    </div>
+
+    <h3>Los tres grupos de sentencias de hoy</h3>
+    <div class="reach">
+      <div class="stm"><h4>DDL</h4><p><strong>Define la estructura.</strong> Crea, modifica o elimina tablas y reglas.</p><p style="font-family:var(--font-mono);font-size:.8rem;">CREATE · ALTER · DROP</p></div>
+      <div class="stm"><h4>DML</h4><p><strong>Manipula los datos.</strong> Agrega, cambia o borra filas.</p><p style="font-family:var(--font-mono);font-size:.8rem;">INSERT · UPDATE · DELETE</p></div>
+      <div class="stm"><h4>SELECT</h4><p><strong>Consulta.</strong> Lee datos sin modificarlos.</p><p style="font-family:var(--font-mono);font-size:.8rem;">SELECT … FROM … WHERE</p></div>
+    </div>
+
+    <div class="lab" id="lab-clasifica">
+      <div class="lab-head"><span class="tag">Laboratorio 1</span><h3>Clasifica la sentencia</h3></div>
+      <div class="lab-body">
+        <p class="lab-intro">Antes de aprender cada una, adivina a qué grupo pertenece. No importa si fallas: la explicación te dice por qué.</p>
+        <div id="qz-clasifica"></div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ 4.1 DDL ============ -->
+  <section class="section" id="ddl">
+    <div class="blk-head"><span class="blk-n">4.1</span><div><span class="blk-time">Lenguaje de definición de datos</span><h2>DDL: CREATE, ALTER y DROP</h2></div></div>
+
+    <p>El DDL trabaja sobre la <strong>estructura</strong>. Cada tabla de tu esquema relacional se convierte en una sentencia <code>CREATE TABLE</code>: ahí decides el nombre de las columnas, su tipo de dato y las reglas que deben cumplir.</p>
+
+    <div class="stm-grid">
+      <div class="stm"><h4>CREATE</h4><p>Construye una tabla nueva.</p>
+        <div class="codeblock"><span class="cb-tag">SQL</span><pre class="sql">CREATE TABLE categoria (
+  id_categoria INTEGER PRIMARY KEY,
+  nombre VARCHAR(40) NOT NULL
+);</pre></div></div>
+      <div class="stm"><h4>ALTER</h4><p>Cambia una tabla que ya existe, por ejemplo agrega una columna.</p>
+        <div class="codeblock"><span class="cb-tag">SQL</span><pre class="sql">ALTER TABLE categoria
+  ADD COLUMN descripcion VARCHAR(100);</pre></div></div>
+      <div class="stm"><h4>DROP</h4><p>Elimina la tabla completa, con todos sus datos.</p>
+        <div class="codeblock"><span class="cb-tag">SQL</span><pre class="sql">DROP TABLE categoria;
+-- Sin pregunta de confirmación.</pre></div></div>
+    </div>
+
+    <div class="warn-box"><strong>Cuidado con DROP:</strong> borra la estructura y todos los datos a la vez. En SQL no hay botón de "deshacer" automático. Por eso, antes de ejecutarlo, verifica el nombre de la tabla.</div>
+
+    <h3>Tipos de datos más usados</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Tipo</th><th>Para qué sirve</th><th>Ejemplo</th></tr></thead>
+        <tbody>
+          <tr><td><code>INTEGER</code></td><td>Números enteros: identificadores, cantidades, existencias.</td><td>id_producto = 12</td></tr>
+          <tr><td><code>VARCHAR(n)</code></td><td>Texto de hasta n caracteres: nombres, correos.</td><td>'Mochila'</td></tr>
+          <tr><td><code>DECIMAL(p,s)</code></td><td>Números con decimales exactos, ideal para dinero. p = dígitos totales, s = decimales.</td><td>DECIMAL(8,2) → 1234.50</td></tr>
+          <tr><td><code>DATE</code></td><td>Fechas en formato año-mes-día.</td><td>'2026-10-24'</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="lab" id="lab-anat">
+      <div class="lab-head"><span class="tag">Laboratorio 2</span><h3>Anatomía de un CREATE TABLE</h3></div>
+      <div class="lab-body">
+        <p class="lab-intro">Toca cualquier parte subrayada del código. Verás qué hace y qué error aparece cuando alguien intenta violarla.</p>
+        <div class="anat">
+          <pre id="anat-code" aria-label="Sentencia CREATE TABLE con partes interactivas"></pre>
+          <div class="anat-panel" id="anat-panel" aria-live="polite"></div>
+        </div>
+        <div class="tokchips" id="anat-chips" aria-label="Partes del CREATE TABLE"></div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ 4.2 DML ============ -->
+  <section class="section" id="dml">
+    <div class="blk-head"><span class="blk-n">4.2</span><div><span class="blk-time">Lenguaje de manipulación de datos</span><h2>DML: INSERT, UPDATE y DELETE</h2></div></div>
+
+    <p>Con la estructura lista, el DML trabaja sobre las <strong>filas</strong>: agrega registros nuevos, modifica los existentes o elimina los que ya no se necesitan.</p>
+
+    <div class="stm-grid">
+      <div class="stm"><h4>INSERT</h4><p>Agrega filas. Escribe siempre la lista de columnas.</p>
+        <div class="codeblock"><span class="cb-tag">SQL</span><pre class="sql">INSERT INTO categoria
+  (id_categoria, nombre)
+VALUES
+  (1, 'Papelería'),
+  (2, 'Cómputo');</pre></div></div>
+      <div class="stm"><h4>UPDATE</h4><p>Cambia valores de filas existentes.</p>
+        <div class="codeblock"><span class="cb-tag">SQL</span><pre class="sql">UPDATE producto
+SET precio = 50.00
+WHERE id_producto = 1;</pre></div></div>
+      <div class="stm"><h4>DELETE</h4><p>Elimina filas que cumplen una condición.</p>
+        <div class="codeblock"><span class="cb-tag">SQL</span><pre class="sql">DELETE FROM pedido
+WHERE id_pedido = 4;</pre></div></div>
+    </div>
+
+    <div class="big-rule">
+      <b>Regla de oro del DML</b>
+      <p>UPDATE y DELETE sin WHERE afectan a todas las filas de la tabla.</p>
+    </div>
+
+    <div class="mixtle-tip">
+      <img src="imagen2.png" alt="Mixtle">
+      <div class="callout" style="margin:0; flex:1;">
+        <p><strong>Piénsalo así:</strong> <code>WHERE</code> es el cinturón de seguridad. Sin él puedes reducir el precio de <em>todos</em> los productos a cero o vaciar la tabla de clientes con una sola línea. Antes de ejecutar un UPDATE o DELETE, pregúntate: ¿qué filas va a tocar?</p>
+      </div>
+    </div>
+
+    <div class="lab" id="lab-detective">
+      <div class="lab-head"><span class="tag">Laboratorio 3</span><h3>Detective de errores SQL</h3></div>
+      <div class="lab-body">
+        <p class="lab-intro">Cada sentencia tiene un problema. Identifica cuál. Son los errores más comunes al empezar.</p>
+        <div id="qz-detective"></div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ 4.3 SELECT ============ -->
+  <section class="section" id="select">
+    <div class="blk-head"><span class="blk-n">4.3</span><div><span class="blk-time">Consultas simples</span><h2>SELECT: hacer preguntas a la base de datos</h2></div></div>
+
+    <p>Un <code>SELECT</code> no cambia nada: solo lee. Se arma por cláusulas, y cada una responde una pregunta distinta.</p>
+    <div class="codeblock"><span class="cb-tag">SQL</span><pre class="sql">SELECT   nombre, precio        -- ¿QUÉ columnas quiero ver?
+FROM     producto              -- ¿DE QUÉ tabla?
+WHERE    precio &gt; 100          -- ¿QUÉ filas cumplen la condición?
+ORDER BY precio DESC           -- ¿EN QUÉ orden?
+LIMIT    3;                    -- ¿CUÁNTAS filas como máximo?</pre></div>
+
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Operador</th><th>Uso</th><th>Ejemplo</th></tr></thead>
+        <tbody>
+          <tr><td><code>= &lt;&gt; &gt; &lt; &gt;= &lt;=</code></td><td>Comparar valores</td><td><code>WHERE existencia = 0</code></td></tr>
+          <tr><td><code>AND · OR</code></td><td>Combinar condiciones</td><td><code>WHERE id_categoria = 2 AND precio &lt; 200</code></td></tr>
+          <tr><td><code>LIKE</code></td><td>Texto con comodín: % = cualquier cantidad de caracteres</td><td><code>WHERE nombre LIKE 'M%'</code></td></tr>
+          <tr><td><code>BETWEEN</code></td><td>Rango, incluyendo los extremos</td><td><code>WHERE precio BETWEEN 100 AND 300</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tip-box"><strong>Detalle de motor:</strong> en SQLite, <code>LIKE</code> no distingue mayúsculas de minúsculas para letras sin acento; en PostgreSQL sí las distingue. Por eso conviene escribir el patrón tal como está guardado el dato.</div>
+
+    <div class="lab" id="lab-query">
+      <div class="lab-head"><span class="tag">Laboratorio 4</span><h3>Constructor de consultas</h3></div>
+      <div class="lab-body">
+        <p class="lab-intro">Arma una consulta sobre la tabla <code>producto</code> y observa cómo cada cláusula va descartando filas (las tachadas). El SQL generado es el que pegarías en tu herramienta.</p>
+        <div class="presets" id="qb-presets"></div>
+        <div class="qb">
+          <div id="qb-form"></div>
+          <div>
+            <div class="codeblock"><span class="cb-tag">SQL generado</span><button class="cb-copy" type="button" id="qb-copy">Copiar</button><pre class="sql" id="qb-sql"></pre></div>
+            <div class="flow" id="qb-flow" aria-live="polite"></div>
+            <div class="res-wrap" id="qb-res"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ 4.4 LLAVES ============ -->
+  <section class="section" id="llaves">
+    <div class="blk-head"><span class="blk-n">4.4</span><div><span class="blk-time">Integridad de los datos</span><h2>Restricciones y llaves</h2></div></div>
+
+    <p>Las restricciones son <strong>reglas que la propia base de datos hace cumplir</strong>. No dependen de que el usuario se acuerde: si alguien intenta guardar un dato que las viola, el sistema lo rechaza.</p>
+
+    <div class="table-scroll">
+      <table class="rules">
+        <thead><tr><th>Restricción</th><th>Garantiza que…</th><th>Ejemplo</th></tr></thead>
+        <tbody>
+          <tr><td><code>PRIMARY KEY</code></td><td>Cada fila se identifica de forma única y nunca es nula.</td><td>id_producto</td></tr>
+          <tr><td><code>FOREIGN KEY</code></td><td>El valor existe en la tabla a la que apunta.</td><td>pedido.id_cliente → cliente</td></tr>
+          <tr><td><code>NOT NULL</code></td><td>La columna siempre tiene valor.</td><td>nombre</td></tr>
+          <tr><td><code>UNIQUE</code></td><td>No se repiten valores.</td><td>correo</td></tr>
+          <tr><td><code>CHECK</code></td><td>El valor cumple una condición.</td><td>precio &gt; 0</td></tr>
+          <tr><td><code>DEFAULT</code></td><td>Si no se indica valor, se usa uno por omisión.</td><td>existencia = 0</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>La llave foránea es la cardinalidad hecha SQL</h3>
+    <p>Aquí vuelve lo que reforzamos en las dailys. La cardinalidad que leíste en <strong>los dos sentidos</strong> decide dónde se coloca la llave foránea:</p>
+
+    <div class="mtwrap">
+      <div class="mt"><div class="cap">CLIENTE (lado 1)</div><table><tr><th class="pk">id_cliente</th><th>nombre</th></tr><tr><td>1</td><td>Ana</td></tr><tr><td>2</td><td>Luis</td></tr></table></div>
+      <div class="mt-arrow">1 : N<br>&larr; la FK va<br>en el lado N &rarr;</div>
+      <div class="mt"><div class="cap">PEDIDO (lado N)</div><table><tr><th class="pk">id_pedido</th><th>fecha</th><th class="fk">id_cliente (FK)</th></tr><tr><td>1</td><td>10-05</td><td class="fk">1</td></tr><tr><td>2</td><td>10-06</td><td class="fk">2</td></tr><tr><td>3</td><td>10-07</td><td class="fk">1</td></tr></table></div>
+    </div>
+
+    <div class="table-scroll">
+      <table class="rules">
+        <thead><tr><th>Cardinalidad</th><th>Cómo se implementa</th><th>Ejemplo</th></tr></thead>
+        <tbody>
+          <tr><td>1:N (o N:1)</td><td>La FK se coloca en la tabla del lado <strong>N</strong> (el lado que dice "muchos").</td><td>pedido.id_cliente</td></tr>
+          <tr><td>N:M</td><td>Se crea una <strong>tabla intermedia</strong> con dos FK. Su llave primaria suele ser la combinación de ambas.</td><td>detalle_pedido (id_pedido, id_producto)</td></tr>
+          <tr><td>1:1</td><td>FK en una de las dos tablas, con <code>UNIQUE</code> para que no se repita.</td><td>gafete.id_empleado UNIQUE</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="lab" id="lab-fk">
+      <div class="lab-head"><span class="tag">Laboratorio 5</span><h3>¿Dónde va la llave foránea?</h3></div>
+      <div class="lab-body">
+        <p class="lab-intro">Lee la relación en sus dos sentidos antes de responder. Si el diagrama dice N:1, recuerda que es la misma relación que 1:N vista desde el otro lado.</p>
+        <div id="qz-fk"></div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ PRÁCTICA GUIADA ============ -->
+  <section class="section" id="practica">
+    <div class="blk-head"><span class="blk-n">Práctica</span><div><span class="blk-time">Réplica guiada de sentencias</span><h2>Construye la Tienda escolar paso a paso</h2></div></div>
+
+    <p>Vas a replicar cada instrucción en tu entorno. Usaremos una base pequeña, la <strong>Tienda escolar</strong>, con cinco tablas: <code>categoria</code>, <code>cliente</code>, <code>producto</code>, <code>pedido</code> y <code>detalle_pedido</code>. Incluye relaciones 1:N y una N:M, justo lo que repasamos.</p>
+
+    <div class="envtabs" role="tablist" aria-label="Entorno de práctica">
+      <button class="envbtn" role="tab" aria-selected="true" data-e="fiddle" type="button">DB Fiddle</button>
+      <button class="envbtn" role="tab" aria-selected="false" data-e="db4s" type="button">DB Browser for SQLite</button>
+      <button class="envbtn" role="tab" aria-selected="false" data-e="motor" type="button">Si usas otro motor</button>
+    </div>
+    <div class="envpanel card" id="envpanel"></div>
+
+    <div class="prog"><span id="pr-txt">0 de 9 pasos completados</span><div class="qz-bar"><i id="pr-bar" style="width:0%"></i></div></div>
+    <div id="steps"></div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ PROYECTO INTEGRADOR ============ -->
+  <section class="section" id="proyecto">
+    <div class="blk-head"><span class="blk-n">Taller</span><div><span class="blk-time">Proyecto integrador</span><h2>Las bases técnicas de tu proyecto</h2></div></div>
+
+    <p>El proyecto integrador que vienen trabajando necesita una base de datos. Hoy dejan sus cimientos: <strong>al menos un diagrama</strong> con las entidades principales y sus relaciones, y un <strong>primer script</strong> que lo convierte en tablas. Lo que construyas aquí será el punto de partida del producto de la unidad: el script SQL ejecutable.</p>
+
+    <h3>Paso 1 · Descubre las entidades en la descripción del proyecto</h3>
+    <p>Lee tu proyecto como una historia. Cada tipo de palabra te sirve para una parte del diseño:</p>
+    <div class="callout">
+      <p style="font-size:1.02rem;line-height:2;">Un <span class="hl e">cliente</span> <span class="hl a">(nombre, correo)</span> <span class="hl r">realiza</span> varios <span class="hl e">pedidos</span> <span class="hl a">(fecha)</span>, y cada pedido <span class="hl r">incluye</span> uno o más <span class="hl e">productos</span> <span class="hl a">(nombre, precio)</span>.</p>
+      <div class="legend3"><span><span class="hl e">Sustantivo</span> = candidato a entidad (tabla)</span><span><span class="hl r">Verbo</span> = relación entre entidades</span><span><span class="hl a">Dato</span> = atributo (columna)</span></div>
+    </div>
+
+    <div class="qgrid">
+      <div class="qc"><h4>1 · ¿Qué cosas debo recordar?</h4><p>Personas, objetos y eventos que el sistema tiene que guardar. Cada una es una entidad.</p></div>
+      <div class="qc"><h4>2 · ¿Qué datos tiene cada cosa?</h4><p>Cada entidad necesita una llave primaria y los datos que describen a cada registro.</p></div>
+      <div class="qc"><h4>3 · ¿Cómo se relacionan?</h4><p>Lee cada relación en sus dos sentidos: ¿cuántos de un lado por cada uno del otro? Y al revés.</p></div>
+    </div>
+
+    <h3>Paso 2 · Lienzo del proyecto: diagrama y script en un solo lugar</h3>
+    <p>Captura tus entidades, atributos y relaciones. El lienzo dibuja el diagrama y genera el script SQL con las llaves foráneas colocadas según la cardinalidad. Cárgalo con el ejemplo para ver cómo funciona y luego pulsa <strong>Nuevo proyecto</strong>.</p>
+
+    <div class="lab" id="lab-canvas">
+      <div class="lab-head"><span class="tag">Taller</span><h3>Lienzo del proyecto integrador</h3></div>
+      <div class="lab-body">
+        <div class="cv-top">
+          <label>Nombre del proyecto<input type="text" id="cv-name" placeholder="Ejemplo: Sistema de control de inventario"></label>
+          <label>Integrantes del equipo<input type="text" id="cv-team" placeholder="Nombres separados por coma"></label>
+        </div>
+        <div class="cv-bar">
+          <button class="btn sm" type="button" id="cv-example">Cargar ejemplo</button>
+          <button class="btn sm ghost" type="button" id="cv-new">Nuevo proyecto</button>
+          <button class="btn sm ghost" type="button" id="cv-save">Guardar mi avance (.json)</button>
+          <button class="btn sm ghost" type="button" id="cv-load">Abrir avance</button>
+          <input type="file" id="cv-file" accept=".json,application/json" hidden>
+        </div>
+        <div class="cv-cols">
+          <div>
+            <p class="panel-t">Entidades y atributos</p>
+            <div id="cv-ents"></div>
+            <button class="btn sm" type="button" id="cv-addent">+ Agregar entidad</button>
+            <p class="panel-t" style="margin-top:1.4rem;">Relaciones (lee los dos sentidos)</p>
+            <div id="cv-rels"></div>
+            <button class="btn sm" type="button" id="cv-addrel">+ Agregar relación</button>
+          </div>
+          <div>
+            <p class="panel-t">Diagrama</p>
+            <div class="viewtabs" role="tablist" aria-label="Vista del diagrama">
+              <button class="vt" role="tab" aria-selected="true" data-v="er" type="button">Vista conceptual (ER)</button>
+              <button class="vt" role="tab" aria-selected="false" data-v="rel" type="button">Vista relacional (tablas)</button>
+            </div>
+            <div class="cv-diagram" id="cv-diagram"></div>
+            <div class="btn-row"><button class="btn sm ghost" type="button" id="cv-svg">Descargar diagrama (.svg)</button></div>
+            <p class="panel-t" style="margin-top:1.2rem;">Lista de verificación de la base</p>
+            <ul class="chk" id="cv-chk"></ul>
+          </div>
+        </div>
+        <div class="sqlout">
+          <p class="panel-t">Script SQL generado</p>
+          <div class="sqlopts">
+            <label>Motor: <select id="cv-eng"><option value="sqlite">SQLite (DB Fiddle / DB Browser)</option><option value="mysql">MySQL</option><option value="pg">PostgreSQL</option></select></label>
+            <label><input type="checkbox" id="cv-drop" checked> Incluir DROP TABLE IF EXISTS al inicio</label>
+          </div>
+          <div class="codeblock"><span class="cb-tag">SQL</span><button class="cb-copy" type="button" id="cv-copy">Copiar</button><pre class="sql" id="cv-sql"></pre></div>
+          <div class="btn-row"><button class="btn sm" type="button" id="cv-dl">Descargar script (.sql)</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip-box"><strong>Entrega mínima de hoy:</strong> el diagrama de tu proyecto con al menos 3 entidades, sus llaves primarias y sus relaciones con la cardinalidad registrada en ambos sentidos. Descarga el diagrama (.svg) y guarda tu avance (.json) para retomarlo en la siguiente sesión.</div>
+  </section>
+
+  <hr class="section-rule">
+
+  <!-- ============ CIERRE ============ -->
+  <section class="section" id="cierre">
+    <div class="blk-head"><span class="blk-n">Cierre</span><div><span class="blk-time">Ejercicio práctico y plenaria</span><h2>Consultas con condiciones sobre tus tablas</h2></div></div>
+
+    <p>Con las tablas de la Tienda escolar ya creadas, resuelve estos retos. Escribe tu consulta, ejecútala y compara el número de filas con el esperado. Comparte tu resultado con el grupo.</p>
+    <div class="retos">
+      <div class="reto"><h4>Reto 1</h4><p>Muestra el nombre y el precio de los productos de la categoría 2 (Cómputo) que tengan existencia, del más caro al más barato.</p><p class="exp">Filas esperadas: 2</p>
+        <details><summary>Ver una solución</summary><div class="codeblock"><span class="cb-tag">SQL</span><pre class="sql">SELECT nombre, precio
+FROM producto
+WHERE id_categoria = 2 AND existencia &gt; 0
+ORDER BY precio DESC;</pre></div></details></div>
+      <div class="reto"><h4>Reto 2</h4><p>Muestra el nombre y el correo de los clientes cuyo nombre empieza con la letra A.</p><p class="exp">Filas esperadas: 1</p>
+        <details><summary>Ver una solución</summary><div class="codeblock"><span class="cb-tag">SQL</span><pre class="sql">SELECT nombre, correo
+FROM cliente
+WHERE nombre LIKE 'A%';</pre></div></details></div>
+      <div class="reto"><h4>Reto 3</h4><p>Muestra los pedidos realizados entre el 6 y el 7 de octubre de 2026.</p><p class="exp">Filas esperadas: 2</p>
+        <details><summary>Ver una solución</summary><div class="codeblock"><span class="cb-tag">SQL</span><pre class="sql">SELECT *
+FROM pedido
+WHERE fecha BETWEEN '2026-10-06' AND '2026-10-07';</pre></div></details></div>
+      <div class="reto"><h4>Reto 4 (propio)</h4><p>Escribe una consulta con condiciones sobre una de las tablas de <strong>tu proyecto</strong> y compártela en la plenaria.</p><p class="exp">Formula una pregunta de negocio y tradúcela a SELECT.</p></div>
+    </div>
+
+    <h3>Plenaria: tres preguntas</h3>
+    <div class="daily3">
+      <div class="dq"><h4>¿Qué me llevo?</h4><p>Una sentencia que ya puedo escribir sin ayuda.</p></div>
+      <div class="dq"><h4>¿Qué sigue confuso?</h4><p>La instrucción o la regla que todavía no me sale.</p></div>
+      <div class="dq"><h4>¿Qué sigue para mi proyecto?</h4><p>La tabla o la relación que el equipo debe terminar antes de la próxima sesión.</p></div>
+    </div>
+
+    <div class="prod">
+      <h3>Producto de aprendizaje de la unidad</h3>
+      <p>Script SQL (DDL) ejecutable que implementa físicamente la estructura de la base de datos diseñada, con sus restricciones de integridad, junto con sentencias DML y consultas SELECT sobre las tablas creadas. Equivale al 20% de la calificación final.</p>
+      <ul>
+        <li>Todas las tablas del diseño, con llave primaria y llaves foráneas colocadas según la cardinalidad.</li>
+        <li>Restricciones de integridad: NOT NULL, UNIQUE, CHECK o DEFAULT donde correspondan.</li>
+        <li>Al menos algunos registros de prueba con INSERT y consultas SELECT con condiciones.</li>
+        <li>El script se ejecuta completo, de principio a fin, sin errores.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Conclusión</h2>
+    <p>SQL permite pasar de un diseño en papel a una base de datos que funciona y que se defiende sola. El DDL construye la estructura, el DML mantiene vivos los datos y el SELECT los consulta, mientras las restricciones y las llaves foráneas hacen cumplir las reglas del negocio. Las llaves foráneas no son un detalle técnico: son la cardinalidad que ya sabes leer, escrita en el lenguaje del sistema gestor. Con el diagrama y el primer script de hoy, tu equipo tiene los cimientos del proyecto integrador sobre los cuales seguir construyendo.</p>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Referencias bibliográficas</h2>
+    <ul>
+      <li>Pratt, P. J. y Last, M. Z. (2020). <em>SQL essentials</em> (3.ª ed.). Pearson.</li>
+      <li>Socas Gutiérrez, R. y Gómez Deniz, L. (2023). <em>Bases de datos: Teoría y práctica aplicada a ingeniería del software</em>. McGraw-Hill.</li>
+      <li>Kleppmann, M. (2017). <em>Designing data-intensive applications: The big ideas behind reliable, scalable, and maintainable systems</em>. O'Reilly Media.</li>
+      <li>PostgreSQL Global Development Group. (2024). <em>PostgreSQL 16 documentation</em>. PostgreSQL. https://www.postgresql.org/docs/16/</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <span><strong>IEDEP</strong> · Bases de Datos I — Clase 4 · Unidad 4</span>
+  <span>Mtro. José Armando Vera Rodríguez · Sábado 24 de octubre de 2026</span>
+</footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+(function () {
+  "use strict";
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function lc(s) { return String(s).toLowerCase(); }
+
+  /* ---------- Utilidades ---------- */
+  var toastT = null;
+  function toast(msg) { var t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove("show"); }, 1800); }
+  function copyText(txt) {
+    function fallback() {
+      var ta = document.createElement("textarea"); ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); toast("Copiado al portapapeles"); } catch (e) { toast("No se pudo copiar; selecciona el texto manualmente"); }
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(function () { toast("Copiado al portapapeles"); }, fallback); else fallback();
+  }
+  function download(name, text, mime) {
+    try {
+      var b = new Blob([text], { type: mime }), u = URL.createObjectURL(b), a = document.createElement("a");
+      a.href = u; a.download = name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(u); }, 1500); toast("Archivo generado: " + name);
+    } catch (e) { toast("Tu navegador no permitió la descarga"); }
+  }
+
+  /* ---------- Resaltado de SQL ---------- */
+  var KW = "CREATE TABLE ALTER DROP ADD COLUMN IF EXISTS PRIMARY KEY FOREIGN REFERENCES NOT NULL UNIQUE CHECK DEFAULT CONSTRAINT INSERT INTO VALUES UPDATE SET DELETE FROM SELECT WHERE ORDER BY ASC DESC LIMIT AND OR LIKE BETWEEN IN JOIN ON GROUP COUNT AS PRAGMA".split(" ");
+  var TY = "INTEGER INT VARCHAR DECIMAL DATE TEXT BOOLEAN".split(" ");
+  var kwSet = {}, tySet = {}; KW.forEach(function (w) { kwSet[w] = 1; }); TY.forEach(function (w) { tySet[w] = 1; });
+  function hl(src) {
+    var re = /(--[^\n]*)|('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_][A-Za-z_0-9]*\b)/g, out = "", last = 0, m;
+    while ((m = re.exec(src))) {
+      out += esc(src.slice(last, m.index)); last = re.lastIndex;
+      if (m[1]) out += '<span class="c">' + esc(m[1]) + "</span>";
+      else if (m[2]) out += '<span class="s">' + esc(m[2]) + "</span>";
+      else if (m[3]) out += '<span class="n">' + esc(m[3]) + "</span>";
+      else { var u = m[4].toUpperCase(); out += kwSet[u] ? '<span class="k">' + esc(m[4]) + "</span>" : (tySet[u] ? '<span class="t">' + esc(m[4]) + "</span>" : esc(m[4])); }
+    }
+    return out + esc(src.slice(last));
+  }
+  function setSql(pre, text) { pre.dataset.raw = text; pre.innerHTML = hl(text); }
+  Array.prototype.forEach.call(document.querySelectorAll("pre.sql"), function (p) { setSql(p, p.textContent); });
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest(".cb-copy"); if (!b || b.id === "qb-copy" || b.id === "cv-copy") return;
+    var pre = b.parentNode.querySelector("pre"); copyText(pre.dataset.raw || pre.textContent);
+  });
+  function addCodeBlock(html) { return html; }
+
+  /* ---------- Navegación activa ---------- */
+  var ids = ["inicio", "ddl", "dml", "select", "llaves", "practica", "proyecto", "cierre"], pills = document.querySelectorAll(".nav-pill"), tick = false;
+  function navUpdate() {
+    tick = false; var cur = 0;
+    ids.forEach(function (id, i) { var el = $(id); if (el && el.getBoundingClientRect().top <= 140) cur = i; });
+    Array.prototype.forEach.call(pills, function (p, i) { p.classList.toggle("on", i === cur && window.scrollY > 300); });
+    if (window.scrollY > 300) { var on = pills[cur]; if (on && on.scrollIntoView && $("nav").scrollWidth > $("nav").clientWidth) { var n = $("nav"); n.scrollLeft = on.offsetLeft - 20; } }
+  }
+  window.addEventListener("scroll", function () { if (!tick) { tick = true; requestAnimationFrame(navUpdate); } }, { passive: true });
+
+  /* ============================================================
+     Motor de preguntas (opción múltiple)
+     ============================================================ */
+  function quiz(rootId, items) {
+    var root = $(rootId), i = 0, score = 0, done = false;
+    function show() {
+      if (i >= items.length) { end(); return; }
+      var it = items[i]; done = false;
+      var h = '<div class="qz-top"><span>Pregunta ' + (i + 1) + " de " + items.length + '</span><span>Aciertos: <strong>' + score + '</strong></span></div><div class="qz-bar"><i style="width:' + (i / items.length * 100) + '%"></i></div>';
+      h += '<div class="qz-q">' + it.q + "</div>";
+      if (it.code) h += '<div class="qcode"><div class="codeblock"><pre class="sql" data-raw="' + esc(it.code) + '">' + hl(it.code) + "</pre></div></div>";
+      h += '<div class="opts' + (it.opts.length === 3 ? ' opts3' : '') + '">';
+      it.opts.forEach(function (o) { h += '<button type="button" class="opt" data-k="' + o.k + '">' + o.label + "</button>"; });
+      h += '</div><div class="qz-fb" aria-live="polite"></div>';
+      root.innerHTML = h;
+      Array.prototype.forEach.call(root.querySelectorAll(".opt"), function (b) { b.addEventListener("click", function () { answer(b); }); });
+    }
+    function answer(btn) {
+      if (done) return; done = true;
+      var it = items[i], good = btn.getAttribute("data-k") === it.ans; if (good) score++;
+      Array.prototype.forEach.call(root.querySelectorAll(".opt"), function (b) {
+        b.disabled = true;
+        if (b.getAttribute("data-k") === it.ans) b.classList.add("right"); else if (b === btn) b.classList.add("wrong");
+      });
+      var fb = root.querySelector(".qz-fb");
+      fb.className = "qz-fb fb " + (good ? "ok" : "no");
+      fb.innerHTML = "<p><b>" + (good ? "Correcto." : "No es esa.") + "</b> " + it.why + '</p><div class="btn-row"><button type="button" class="btn sm" data-next>' + (i + 1 < items.length ? "Siguiente" : "Ver resultado") + "</button></div>";
+      var nx = fb.querySelector("[data-next]"); nx.addEventListener("click", function () { i++; show(); }); nx.focus();
+    }
+    function end() {
+      var n = items.length, m = score === n ? "Excelente: dominas este grupo de conceptos." : (score >= n - 1 ? "Muy bien. Repasa la explicación de la que fallaste." : "Vuelve a leer la sección y repite el laboratorio.");
+      root.innerHTML = '<div class="qz-bar"><i style="width:100%"></i></div><div class="qz-end"><div class="score">' + score + " / " + n + "</div><p>" + m + '</p><div class="btn-row" style="justify-content:center;"><button type="button" class="btn" data-again>Intentar de nuevo</button></div></div>';
+      root.querySelector("[data-again]").addEventListener("click", function () { i = 0; score = 0; show(); });
+    }
+    show();
+  }
+
+  quiz("qz-clasifica", [
+    { q: "¿A qué grupo pertenece esta sentencia?", code: "CREATE TABLE cliente (\n  id_cliente INTEGER PRIMARY KEY\n);", ans: "ddl", why: "CREATE construye una estructura (una tabla). Todo lo que crea, modifica o elimina estructuras es DDL.",
+      opts: [{ k: "ddl", label: "DDL · define la estructura" }, { k: "dml", label: "DML · manipula los datos" }, { k: "sel", label: "SELECT · consulta" }] },
+    { q: "¿A qué grupo pertenece esta sentencia?", code: "INSERT INTO cliente (id_cliente, nombre)\nVALUES (1, 'Ana');", ans: "dml", why: "INSERT agrega una fila: cambia los datos, no la estructura. Es DML.",
+      opts: [{ k: "ddl", label: "DDL · define la estructura" }, { k: "dml", label: "DML · manipula los datos" }, { k: "sel", label: "SELECT · consulta" }] },
+    { q: "¿A qué grupo pertenece esta sentencia?", code: "SELECT nombre FROM cliente;", ans: "sel", why: "SELECT solo lee: no crea, no cambia y no borra nada.",
+      opts: [{ k: "ddl", label: "DDL · define la estructura" }, { k: "dml", label: "DML · manipula los datos" }, { k: "sel", label: "SELECT · consulta" }] },
+    { q: "¿A qué grupo pertenece esta sentencia?", code: "ALTER TABLE cliente\n  ADD COLUMN telefono VARCHAR(15);", ans: "ddl", why: "Agregar una columna cambia la estructura de la tabla. Es DDL, aunque la tabla ya tenga datos.",
+      opts: [{ k: "ddl", label: "DDL · define la estructura" }, { k: "dml", label: "DML · manipula los datos" }, { k: "sel", label: "SELECT · consulta" }] },
+    { q: "¿A qué grupo pertenece esta sentencia?", code: "UPDATE producto\nSET precio = 50\nWHERE id_producto = 1;", ans: "dml", why: "UPDATE cambia valores de filas que ya existen. Es DML.",
+      opts: [{ k: "ddl", label: "DDL · define la estructura" }, { k: "dml", label: "DML · manipula los datos" }, { k: "sel", label: "SELECT · consulta" }] },
+    { q: "¿A qué grupo pertenece esta sentencia?", code: "DROP TABLE temporal;", ans: "ddl", why: "DROP elimina la tabla completa, estructura incluida. Se parece a DELETE, pero DELETE solo quita filas y deja la tabla.",
+      opts: [{ k: "ddl", label: "DDL · define la estructura" }, { k: "dml", label: "DML · manipula los datos" }, { k: "sel", label: "SELECT · consulta" }] },
+    { q: "¿A qué grupo pertenece esta sentencia?", code: "DELETE FROM pedido\nWHERE id_pedido = 4;", ans: "dml", why: "DELETE quita filas, pero la tabla pedido sigue existiendo con su estructura. Es DML.",
+      opts: [{ k: "ddl", label: "DDL · define la estructura" }, { k: "dml", label: "DML · manipula los datos" }, { k: "sel", label: "SELECT · consulta" }] },
+    { q: "¿A qué grupo pertenece esta sentencia?", code: "SELECT * FROM producto\nWHERE existencia = 0;", ans: "sel", why: "Aunque lleve WHERE, solo consulta: muestra los productos agotados sin modificarlos.",
+      opts: [{ k: "ddl", label: "DDL · define la estructura" }, { k: "dml", label: "DML · manipula los datos" }, { k: "sel", label: "SELECT · consulta" }] }
+  ]);
+
+  var DET = [
+    { q: "Esta sentencia falla. ¿Cuál es el problema?", code: "CREATE TABLE alumno (\n  id_alumno INTEGER PRIMARY KEY\n  nombre VARCHAR(40) NOT NULL\n);", ans: "a",
+      why: "Las columnas de un CREATE TABLE se separan con comas. Falta una después de PRIMARY KEY.",
+      opts: [{ k: "a", label: "Falta una coma entre las dos columnas" }, { k: "b", label: "VARCHAR no se puede combinar con NOT NULL" }, { k: "c", label: "Falta una cláusula WHERE" }, { k: "d", label: "Debería usar DROP TABLE" }] },
+    { q: "Se ejecutan estas dos sentencias en este orden. ¿Qué está mal?", code: "CREATE TABLE pedido (\n  id_pedido  INTEGER PRIMARY KEY,\n  id_cliente INTEGER NOT NULL,\n  FOREIGN KEY (id_cliente) REFERENCES cliente (id_cliente)\n);\nCREATE TABLE cliente (\n  id_cliente INTEGER PRIMARY KEY\n);", ans: "b",
+      why: "pedido apunta a cliente antes de que cliente exista. MySQL y PostgreSQL rechazan la sentencia; SQLite la acepta, pero fallará al insertar datos. Regla práctica: primero se crean las tablas del lado 1 (las referenciadas) y después las del lado N.",
+      opts: [{ k: "a", label: "Una tabla no puede tener llave foránea" }, { k: "b", label: "pedido referencia a cliente antes de crearla: hay que crear primero la tabla del lado 1" }, { k: "c", label: "id_cliente debería ser VARCHAR" }, { k: "d", label: "No puede haber dos llaves primarias" }] },
+    { q: "Esta sentencia falla. ¿Cuál es el problema?", code: "INSERT INTO cliente (id_cliente, nombre)\nVALUES (1, 'Ana', 'ana@ejemplo.edu.mx');", ans: "c",
+      why: "La lista de columnas tiene 2 elementos y VALUES trae 3. Deben coincidir en número y orden.",
+      opts: [{ k: "a", label: "INSERT no se puede usar en la tabla cliente" }, { k: "b", label: "El correo debe ir sin comillas" }, { k: "c", label: "Hay 3 valores para solo 2 columnas" }, { k: "d", label: "Falta ORDER BY" }] },
+    { q: "Se quiere poner en cero la existencia del producto 5. ¿Qué peligro tiene esta sentencia?", code: "UPDATE producto\nSET existencia = 0;", ans: "a",
+      why: "Sin WHERE, el UPDATE afecta a todas las filas: todos los productos quedarían con existencia 0. Lo correcto es agregar WHERE id_producto = 5.",
+      opts: [{ k: "a", label: "Falta WHERE: cambia la existencia de todos los productos" }, { k: "b", label: "El valor 0 no está permitido" }, { k: "c", label: "SET solo funciona con texto" }, { k: "d", label: "No tiene ningún problema" }] },
+    { q: "Se buscan los productos llamados Mochila, pero la consulta falla. ¿Por qué?", code: "SELECT nombre, precio\nFROM producto\nWHERE nombre = Mochila;", ans: "d",
+      why: "Los valores de texto van entre comillas simples. Sin ellas, el motor interpreta Mochila como el nombre de una columna y no la encuentra. Se escribe 'Mochila'.",
+      opts: [{ k: "a", label: "SELECT no admite WHERE" }, { k: "b", label: "Falta LIMIT" }, { k: "c", label: "precio no es una columna válida" }, { k: "d", label: "El texto Mochila debe ir entre comillas simples" }] }
+  ];
+  quiz("qz-detective", DET);
+
+  var FKO = [{ k: "a", label: "En la tabla del lado 1" }, { k: "b", label: "En la tabla del lado N" }, { k: "c", label: "En una tabla intermedia con dos llaves foráneas" }, { k: "d", label: "En cualquiera de las dos, con UNIQUE" }];
+  quiz("qz-fk", [
+    { q: "<strong>CLIENTE 1:N PEDIDO.</strong> Un cliente hace muchos pedidos; un pedido pertenece a un solo cliente. ¿Dónde va la llave foránea?", ans: "b", opts: FKO,
+      why: "Ida (cliente → pedidos): N. Vuelta (pedido → cliente): 1. Cada pedido apunta a un solo cliente, por eso la columna <code>id_cliente</code> vive en PEDIDO, el lado N." },
+    { q: "<strong>EMPLEADO 1:1 GAFETE.</strong> Cada empleado tiene un gafete y cada gafete es de un empleado. ¿Dónde va la llave foránea?", ans: "d", opts: FKO,
+      why: "Con 1 en ambos sentidos puede ir en cualquiera de las dos tablas, pero debe llevar <code>UNIQUE</code> para que no se repita el mismo empleado en dos gafetes." },
+    { q: "<strong>ESTUDIANTE N:M MATERIA.</strong> Un estudiante cursa varias materias; una materia la cursan varios estudiantes. ¿Cómo se implementa?", ans: "c", opts: FKO,
+      why: "Con N en ambos sentidos, ninguna de las dos tablas puede guardar la FK. Se crea una tabla intermedia (por ejemplo, <code>inscripcion</code>) con <code>id_estudiante</code> e <code>id_materia</code>." },
+    { q: "<strong>LIBRO N:1 EDITORIAL.</strong> Cada libro lo publica una sola editorial; una editorial publica muchos libros. ¿Dónde va la llave foránea?", ans: "b", opts: FKO,
+      why: "N:1 es la misma relación que EDITORIAL 1:N LIBRO. El lado N es LIBRO, así que <code>id_editorial</code> se guarda en la tabla libro. No importa en qué orden aparezcan las entidades en el diagrama." },
+    { q: "<strong>DOCENTE 1:N GRUPO.</strong> Un docente es titular de varios grupos; un grupo tiene un solo titular. ¿Dónde va la llave foránea?", ans: "b", opts: FKO,
+      why: "El lado N es GRUPO: cada grupo guarda <code>id_docente</code>. Si la FK estuviera en docente, cada docente solo podría tener un grupo." },
+    { q: "<strong>PEDIDO N:M PRODUCTO</strong>, con la cantidad pedida de cada producto. ¿Cómo se implementa y dónde se guarda la cantidad?", ans: "c", opts: FKO,
+      why: "Se crea <code>detalle_pedido(id_pedido, id_producto, cantidad)</code>. La cantidad pertenece a la relación (a cada pareja pedido-producto), por eso se guarda en la tabla intermedia." }
+  ]);
+
+  /* ============================================================
+     Anatomía de CREATE TABLE
+     ============================================================ */
+  var AN = {
+    create: { t: "CREATE TABLE producto", p: "Instrucción DDL que construye una tabla nueva. Entre paréntesis van las columnas, separadas por comas, y al final las reglas de tabla.", e: "table producto already exists" },
+    tipo: { t: "Tipo de dato", p: "Define qué clase de valor admite la columna: INTEGER (enteros), VARCHAR(60) (texto de hasta 60 caracteres) y DECIMAL(8,2) (hasta 8 dígitos, 2 decimales).", e: "MySQL y PostgreSQL rechazan 'abc' en una columna INTEGER. SQLite es más flexible con los tipos: añade CHECK si necesitas la regla." },
+    pk: { t: "PRIMARY KEY", p: "Identifica de forma única cada fila. Implica NOT NULL y UNIQUE. Una tabla tiene una sola llave primaria, que puede ser compuesta.", e: "UNIQUE constraint failed: producto.id_producto" },
+    nn: { t: "NOT NULL", p: "La columna siempre debe tener valor. Úsalo en los datos sin los cuales la fila no tiene sentido.", e: "NOT NULL constraint failed: producto.nombre" },
+    check: { t: "CHECK (precio > 0)", p: "El valor debe cumplir la condición. Sirve para reglas de negocio simples: precios positivos, cantidades mínimas, rangos.", e: "CHECK constraint failed: precio > 0" },
+    def: { t: "DEFAULT 0", p: "Si el INSERT no incluye la columna, se usa este valor. Aquí un producto nuevo empieza con existencia 0.", e: "No genera error: es un valor de respaldo." },
+    uq: { t: "UNIQUE", p: "No permite valores repetidos en la columna (a diferencia de la llave primaria, admite valores nulos).", e: "UNIQUE constraint failed: producto.correo_prov" },
+    fk: { t: "FOREIGN KEY … REFERENCES", p: "id_categoria solo acepta valores que existan en categoria. Es la cardinalidad 1:N hecha SQL: una categoría tiene muchos productos y cada producto una sola categoría.", e: "FOREIGN KEY constraint failed" }
+  };
+  var AN_ORDER = ["create", "tipo", "pk", "nn", "check", "def", "uq", "fk"], AN_LBL = { create: "CREATE TABLE", tipo: "Tipo de dato", pk: "PRIMARY KEY", nn: "NOT NULL", check: "CHECK", def: "DEFAULT", uq: "UNIQUE", fk: "FOREIGN KEY" };
+  var SEG = [
+    ["CREATE TABLE producto", "create"], [" (\n  id_producto  ", null], ["INTEGER", "tipo"], [" ", null], ["PRIMARY KEY", "pk"], [",\n  nombre       ", null], ["VARCHAR(60)", "tipo"], [" ", null], ["NOT NULL", "nn"], [",\n  precio       ", null], ["DECIMAL(8,2)", "tipo"], [" ", null], ["CHECK (precio > 0)", "check"],
+    [",\n  existencia   INTEGER ", null], ["DEFAULT 0", "def"], [",\n  correo_prov  VARCHAR(80) ", null], ["UNIQUE", "uq"], [",\n  id_categoria INTEGER ", null], ["NOT NULL", "nn"], [",\n  ", null], ["FOREIGN KEY (id_categoria)", "fk"], ["\n    ", null], ["REFERENCES categoria (id_categoria)", "fk"], ["\n);", null]
+  ];
+  var anCur = null;
+  (function () {
+    var h = ""; SEG.forEach(function (s) { h += s[1] ? '<span class="tok" tabindex="0" role="button" data-k="' + s[1] + '">' + esc(s[0]) + "</span>" : esc(s[0]); });
+    $("anat-code").innerHTML = h;
+    var c = ""; AN_ORDER.forEach(function (k) { c += '<button type="button" data-k="' + k + '">' + AN_LBL[k] + "</button>"; }); $("anat-chips").innerHTML = c;
+    function sel(k) {
+      anCur = k; var a = AN[k];
+      Array.prototype.forEach.call(document.querySelectorAll("#anat-code .tok"), function (t) { t.classList.toggle("on", t.getAttribute("data-k") === k); });
+      Array.prototype.forEach.call(document.querySelectorAll("#anat-chips button"), function (t) { t.classList.toggle("on", t.getAttribute("data-k") === k); });
+      $("anat-panel").innerHTML = "<h4>" + esc(a.t) + "</h4><p>" + esc(a.p) + '</p><p style="font-size:.78rem;font-family:var(--font-ui);color:var(--ink-muted);margin-bottom:0;">Si alguien la viola:</p><span class="err">' + esc(a.e) + "</span>";
+    }
+    $("anat-panel").innerHTML = "<h4>Toca una parte del código</h4><p>Cada pieza subrayada es una instrucción distinta. Descubre para qué sirve y qué error produce cuando se incumple.</p>";
+    $("anat-code").addEventListener("click", function (e) { var t = e.target.closest(".tok"); if (t) sel(t.getAttribute("data-k")); });
+    $("anat-code").addEventListener("keydown", function (e) { var t = e.target.closest(".tok"); if (t && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); sel(t.getAttribute("data-k")); } });
+    $("anat-chips").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) sel(b.getAttribute("data-k")); });
+  })();
+
+  /* ============================================================
+     Constructor de consultas
+     ============================================================ */
+  var DATA = [
+    { id_producto: 1, nombre: "Cuaderno profesional", precio: 45, existencia: 30, id_categoria: 1 },
+    { id_producto: 2, nombre: "Pluma azul", precio: 8.5, existencia: 120, id_categoria: 1 },
+    { id_producto: 3, nombre: "Memoria USB 32 GB", precio: 120, existencia: 15, id_categoria: 2 },
+    { id_producto: 4, nombre: "Mouse inalámbrico", precio: 199, existencia: 8, id_categoria: 2 },
+    { id_producto: 5, nombre: "Mochila", precio: 350, existencia: 10, id_categoria: 3 },
+    { id_producto: 6, nombre: "Calculadora científica", precio: 280, existencia: 12, id_categoria: 3 },
+    { id_producto: 7, nombre: "Marcatextos", precio: 15, existencia: 60, id_categoria: 1 },
+    { id_producto: 8, nombre: "Audífonos", precio: 160, existencia: 0, id_categoria: 2 }
+  ];
+  var COLS = ["id_producto", "nombre", "precio", "existencia", "id_categoria"];
+  var OPS_NUM = ["=", "<>", ">", ">=", "<", "<="], OPS_TXT = ["=", "<>", "LIKE"];
+  var Q = { cols: { nombre: true, precio: true }, star: false, w1: { on: true, col: "precio", op: ">", val: "100" }, w2: { on: false, col: "id_categoria", op: "=", val: "1" }, conn: "AND", ocol: "precio", odir: "DESC", lim: "" };
+  function isTxt(c) { return c === "nombre"; }
+  function opsFor(c) { return isTxt(c) ? OPS_TXT : OPS_NUM; }
+  function optHtml(list, cur, labels) { return list.map(function (x) { return '<option value="' + esc(x) + '"' + (x === cur ? " selected" : "") + ">" + esc(labels ? labels[x] : x) + "</option>"; }).join(""); }
+  function whereRow(n, w) {
+    return '<div class="row"><label class="ck"><input type="checkbox" data-w="' + n + '" data-f="on"' + (w.on ? " checked" : "") + '> ' + (n === 1 ? "Condición 1" : "Condición 2") + '</label>' +
+      '<select data-w="' + n + '" data-f="col">' + optHtml(COLS, w.col) + '</select><select data-w="' + n + '" data-f="op">' + optHtml(opsFor(w.col), w.op) + '</select>' +
+      '<input type="text" data-w="' + n + '" data-f="val" value="' + esc(w.val) + '" size="10" aria-label="Valor de la condición ' + n + '"></div>';
+  }
+  function qbForm() {
+    var f = '<fieldset><legend>SELECT · columnas</legend><label class="ck"><input type="checkbox" id="qb-star"' + (Q.star ? " checked" : "") + '> Todas (*)</label><br>';
+    COLS.forEach(function (c) { f += '<label class="ck"><input type="checkbox" data-c="' + c + '"' + (Q.cols[c] ? " checked" : "") + (Q.star ? " disabled" : "") + '> ' + c + "</label>"; });
+    f += '</fieldset><fieldset><legend>WHERE · filtro</legend>' + whereRow(1, Q.w1) +
+      '<div class="row"><select id="qb-conn"><option' + (Q.conn === "AND" ? " selected" : "") + '>AND</option><option' + (Q.conn === "OR" ? " selected" : "") + ">OR</option></select><span class=\"hint-line\" style=\"margin:0\">AND exige las dos condiciones; OR basta con una.</span></div>" + whereRow(2, Q.w2) +
+      '<p class="hint-line" style="margin:.2rem 0 0">Para texto usa LIKE con %, por ejemplo M% (empieza con M).</p></fieldset>' +
+      '<fieldset><legend>ORDER BY · orden</legend><div class="row"><select id="qb-ocol"><option value="">(sin orden)</option>' + optHtml(COLS, Q.ocol) + '</select><select id="qb-odir"><option' + (Q.odir === "ASC" ? " selected" : "") + '>ASC</option><option' + (Q.odir === "DESC" ? " selected" : "") + ">DESC</option></select></div></fieldset>" +
+      '<fieldset><legend>LIMIT · máximo de filas</legend><div class="row"><input type="number" id="qb-lim" min="1" max="8" value="' + esc(Q.lim) + '" placeholder="sin límite" style="width:8rem"></div></fieldset>';
+    $("qb-form").innerHTML = f;
+  }
+  function litSql(c, v) { if (isTxt(c)) return "'" + String(v).replace(/'/g, "''") + "'"; var n = parseFloat(v); return isNaN(n) ? null : String(n); }
+  function testRow(r, w) {
+    var v = r[w.col];
+    if (isTxt(w.col)) {
+      if (w.op === "=") return v === w.val; if (w.op === "<>") return v !== w.val;
+      var re = new RegExp("^" + w.val.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/%/g, ".*").replace(/_/g, ".") + "$", "i"); return re.test(v);
+    }
+    var n = parseFloat(w.val);
+    return { "=": v === n, "<>": v !== n, ">": v > n, ">=": v >= n, "<": v < n, "<=": v <= n }[w.op];
+  }
+  function qbRun() {
+    var cols = Q.star ? COLS.slice() : COLS.filter(function (c) { return Q.cols[c]; }), msg = "", conds = [];
+    [Q.w1, Q.w2].forEach(function (w) {
+      if (!w.on) return;
+      if (w.op === "LIKE" && !isTxt(w.col)) { msg = "LIKE se usa con columnas de texto (nombre)."; return; }
+      var lit = litSql(w.col, w.val); if (lit === null) { msg = "El valor de " + w.col + " debe ser un número."; return; }
+      conds.push({ w: w, sql: w.col + " " + w.op + " " + lit });
+    });
+    var sql = "SELECT " + (Q.star ? "*" : (cols.join(", ") || "…")) + "\nFROM producto";
+    if (conds.length) sql += "\nWHERE " + conds.map(function (c) { return c.sql; }).join(" " + Q.conn + " ");
+    if (Q.ocol) sql += "\nORDER BY " + Q.ocol + " " + Q.odir;
+    var lim = parseInt(Q.lim, 10); if (lim > 0) sql += "\nLIMIT " + lim;
+    sql += ";";
+    setSql($("qb-sql"), sql);
+    if (!cols.length) msg = "Elige al menos una columna para el SELECT.";
+    if (msg) { $("qb-flow").innerHTML = ""; $("qb-res").innerHTML = '<div class="fb no"><p>' + esc(msg) + "</p></div>"; return; }
+    var rows = DATA.map(function (r) { return r; }), kept = rows.filter(function (r) {
+      if (!conds.length) return true;
+      var res = conds.map(function (c) { return testRow(r, c.w); });
+      return Q.conn === "AND" ? res.every(Boolean) : res.some(Boolean);
+    });
+    var afterW = kept.length;
+    if (Q.ocol) { var k = Q.ocol, d = Q.odir === "DESC" ? -1 : 1; kept = kept.slice().sort(function (a, b) { var x = a[k], y = b[k]; return (x < y ? -1 : x > y ? 1 : 0) * d; }); }
+    var fin = lim > 0 ? kept.slice(0, lim) : kept, out = DATA.filter(function (r) { return fin.indexOf(r) < 0; });
+    var fl = '<span>FROM producto: ' + DATA.length + ' filas</span>';
+    if (conds.length) fl += '<i>&rarr;</i><span>WHERE: ' + afterW + " filas</span>"; if (Q.ocol) fl += '<i>&rarr;</i><span>ORDER BY ' + Q.ocol + "</span>"; if (lim > 0) fl += '<i>&rarr;</i><span>LIMIT ' + lim + "</span>";
+    fl += '<i>&rarr;</i><span><strong>Resultado: ' + fin.length + " " + (fin.length === 1 ? "fila" : "filas") + "</strong></span>";
+    $("qb-flow").innerHTML = fl;
+    var t = '<table class="res"><thead><tr>' + cols.map(function (c) { return "<th>" + c + "</th>"; }).join("") + "</tr></thead><tbody>";
+    fin.forEach(function (r) { t += "<tr>" + cols.map(function (c) { return "<td>" + esc(r[c]) + "</td>"; }).join("") + "</tr>"; });
+    out.forEach(function (r) { t += '<tr class="out">' + cols.map(function (c) { return "<td>" + esc(r[c]) + "</td>"; }).join("") + "</tr>"; });
+    $("qb-res").innerHTML = t + '</tbody></table><p class="hint-line">Las filas tachadas fueron descartadas por WHERE o por LIMIT.</p>';
+  }
+  qbForm(); qbRun();
+  $("qb-form").addEventListener("change", function (e) {
+    var t = e.target;
+    if (t.id === "qb-star") { Q.star = t.checked; qbForm(); }
+    else if (t.hasAttribute("data-c")) Q.cols[t.getAttribute("data-c")] = t.checked;
+    else if (t.hasAttribute("data-w")) {
+      var w = t.getAttribute("data-w") === "1" ? Q.w1 : Q.w2, f = t.getAttribute("data-f");
+      if (f === "on") w.on = t.checked; else if (f === "col") { w.col = t.value; if (opsFor(w.col).indexOf(w.op) < 0) w.op = "="; qbForm(); } else if (f === "op") w.op = t.value;
+    } else if (t.id === "qb-conn") Q.conn = t.value; else if (t.id === "qb-ocol") Q.ocol = t.value; else if (t.id === "qb-odir") Q.odir = t.value;
+    qbRun();
+  });
+  $("qb-form").addEventListener("input", function (e) {
+    var t = e.target;
+    if (t.id === "qb-lim") Q.lim = t.value; else if (t.getAttribute("data-f") === "val") (t.getAttribute("data-w") === "1" ? Q.w1 : Q.w2).val = t.value; else return;
+    qbRun();
+  });
+  var PRE = [
+    ["Papelería, de mayor a menor precio", { cols: { nombre: true, precio: true }, star: false, w1: { on: true, col: "id_categoria", op: "=", val: "1" }, w2: { on: false, col: "precio", op: ">", val: "10" }, conn: "AND", ocol: "precio", odir: "DESC", lim: "" }],
+    ["Productos caros (más de 100)", { cols: { nombre: true, precio: true }, star: false, w1: { on: true, col: "precio", op: ">", val: "100" }, w2: { on: false, col: "id_categoria", op: "=", val: "1" }, conn: "AND", ocol: "precio", odir: "DESC", lim: "" }],
+    ["Nombre que empieza con M", { cols: { nombre: true }, star: false, w1: { on: true, col: "nombre", op: "LIKE", val: "M%" }, w2: { on: false, col: "precio", op: ">", val: "10" }, conn: "AND", ocol: "", odir: "ASC", lim: "" }],
+    ["Agotados", { cols: { nombre: true, existencia: true }, star: false, w1: { on: true, col: "existencia", op: "=", val: "0" }, w2: { on: false, col: "precio", op: ">", val: "10" }, conn: "AND", ocol: "", odir: "ASC", lim: "" }],
+    ["Cómputo caro o agotado", { cols: { nombre: true, precio: true, existencia: true }, star: false, w1: { on: true, col: "precio", op: ">", val: "150" }, w2: { on: true, col: "existencia", op: "=", val: "0" }, conn: "OR", ocol: "precio", odir: "DESC", lim: "" }],
+    ["Los 3 más caros", { cols: { nombre: true, precio: true }, star: false, w1: { on: false, col: "precio", op: ">", val: "0" }, w2: { on: false, col: "precio", op: ">", val: "0" }, conn: "AND", ocol: "precio", odir: "DESC", lim: "3" }]
+  ];
+  (function () {
+    var h = ""; PRE.forEach(function (p, i) { h += '<button type="button" class="btn sm ghost" data-i="' + i + '">' + p[0] + "</button>"; }); $("qb-presets").innerHTML = h;
+    $("qb-presets").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; Q = JSON.parse(JSON.stringify(PRE[+b.getAttribute("data-i")][1])); qbForm(); qbRun(); });
+    $("qb-copy").addEventListener("click", function () { copyText($("qb-sql").dataset.raw); });
+  })();
+
+  /* ============================================================
+     Práctica guiada
+     ============================================================ */
+  var ENV = {
+    fiddle: '<ol><li>Entra a <strong>dbfiddle.uk</strong> y, en el selector de motor, elige <strong>SQLite</strong>. Con SQLite todo el script funciona tal como está escrito.</li><li>En el panel <strong>Schema SQL</strong> pega, acumulando, los pasos que construyen la base: 1, 2, 3, 4 y 5.</li><li>En el panel <strong>Query SQL</strong> escribe las consultas y las pruebas de error (pasos 7 y 8). Ahí puedes ejecutar una sentencia a la vez.</li><li>Presiona <strong>Run</strong>. DB Fiddle ejecuta primero el Schema y luego el Query en cada corrida, así que lo que cambies en Query no se conserva para la siguiente ejecución.</li></ol>',
+    db4s: '<ol><li>Abre <strong>DB Browser for SQLite</strong> y elige <strong>Nueva base de datos</strong>. Guárdala como <code>tienda_escolar.db</code>. Cuando aparezca el cuadro para definir una tabla, presiona <strong>Cancelar</strong>.</li><li>Ve a la pestaña <strong>Ejecutar SQL</strong>, pega un paso y ejecútalo completo (botón Ejecutar todo o Ctrl+Enter).</li><li>Después de cada paso que cree o modifique datos, presiona <strong>Escribir cambios</strong> (Ctrl+S).</li><li>Para el paso 7, ejecuta <strong>una sentencia a la vez</strong>: selecciona solo esa línea y ejecuta la selección. Si ejecutas todo junto, el primer error detiene el resto.</li><li>Comprueba el resultado en <strong>Estructura de la base de datos</strong> y <strong>Hoja de datos</strong>.</li></ol>',
+    motor: '<p>Los pasos están escritos para SQLite. Si tu equipo usa otro motor, estas son las diferencias que importan hoy:</p><div class="table-scroll"><table><thead><tr><th>Tema</th><th>SQLite</th><th>MySQL</th><th>PostgreSQL</th></tr></thead><tbody><tr><td>Activar llaves foráneas</td><td><code>PRAGMA foreign_keys = ON;</code></td><td>Siempre activas en InnoDB</td><td>Siempre activas</td></tr><tr><td>Identificador automático</td><td><code>INTEGER PRIMARY KEY</code> (o AUTOINCREMENT)</td><td><code>AUTO_INCREMENT</code></td><td><code>SERIAL</code> o <code>GENERATED … AS IDENTITY</code></td></tr><tr><td>Tipos de dato</td><td>Flexible: acepta casi cualquier valor</td><td>Estricto</td><td>Estricto</td></tr><tr><td>LIKE con mayúsculas</td><td>No distingue</td><td>Depende del collation</td><td>Distingue (ILIKE no distingue)</td></tr></tbody></table></div><p class="hint-line">En MySQL y PostgreSQL elimina la línea del PRAGMA; el resto del script se ejecuta igual.</p>'
+  };
+  function envShow(e) {
+    $("envpanel").innerHTML = ENV[e];
+    Array.prototype.forEach.call(document.querySelectorAll(".envbtn"), function (b) { b.setAttribute("aria-selected", b.getAttribute("data-e") === e ? "true" : "false"); });
+  }
+  document.querySelector(".envtabs").addEventListener("click", function (e) { var b = e.target.closest(".envbtn"); if (b) envShow(b.getAttribute("data-e")); });
+  envShow("fiddle");
+
+  var SQL_CREATE = "CREATE TABLE categoria (\n  id_categoria INTEGER PRIMARY KEY,\n  nombre       VARCHAR(40) NOT NULL UNIQUE\n);\n\nCREATE TABLE cliente (\n  id_cliente INTEGER PRIMARY KEY,\n  nombre     VARCHAR(60) NOT NULL,\n  correo     VARCHAR(80) UNIQUE\n);\n\nCREATE TABLE producto (\n  id_producto  INTEGER PRIMARY KEY,\n  nombre       VARCHAR(60) NOT NULL,\n  precio       DECIMAL(8,2) NOT NULL CHECK (precio > 0),\n  existencia   INTEGER NOT NULL DEFAULT 0 CHECK (existencia >= 0),\n  id_categoria INTEGER NOT NULL,\n  FOREIGN KEY (id_categoria) REFERENCES categoria (id_categoria)\n);\n\nCREATE TABLE pedido (\n  id_pedido  INTEGER PRIMARY KEY,\n  fecha      DATE NOT NULL,\n  id_cliente INTEGER NOT NULL,\n  FOREIGN KEY (id_cliente) REFERENCES cliente (id_cliente)\n);\n\nCREATE TABLE detalle_pedido (\n  id_pedido   INTEGER NOT NULL,\n  id_producto INTEGER NOT NULL,\n  cantidad    INTEGER NOT NULL CHECK (cantidad > 0),\n  PRIMARY KEY (id_pedido, id_producto),\n  FOREIGN KEY (id_pedido)   REFERENCES pedido (id_pedido),\n  FOREIGN KEY (id_producto) REFERENCES producto (id_producto)\n);";
+  var SQL_INSERT = "INSERT INTO categoria (id_categoria, nombre) VALUES\n  (1, 'Papelería'),\n  (2, 'Cómputo'),\n  (3, 'Accesorios');\n\nINSERT INTO cliente (id_cliente, nombre, correo) VALUES\n  (1, 'Ana Torres',   'ana@ejemplo.edu.mx'),\n  (2, 'Luis Ramírez', 'luis@ejemplo.edu.mx'),\n  (3, 'Sofía Méndez', 'sofia@ejemplo.edu.mx'),\n  (4, 'Diego Cruz',   'diego@ejemplo.edu.mx');\n\nINSERT INTO producto (id_producto, nombre, precio, existencia, id_categoria) VALUES\n  (1, 'Cuaderno profesional',    45.00,  30, 1),\n  (2, 'Pluma azul',               8.50, 120, 1),\n  (3, 'Memoria USB 32 GB',      120.00,  15, 2),\n  (4, 'Mouse inalámbrico',      199.00,   8, 2),\n  (5, 'Mochila',                350.00,  10, 3),\n  (6, 'Calculadora científica', 280.00,  12, 3),\n  (7, 'Marcatextos',             15.00,  60, 1),\n  (8, 'Audífonos',              160.00,   0, 2);\n\nINSERT INTO pedido (id_pedido, fecha, id_cliente) VALUES\n  (1, '2026-10-05', 1),\n  (2, '2026-10-06', 2),\n  (3, '2026-10-07', 1),\n  (4, '2026-10-08', 3);\n\nINSERT INTO detalle_pedido (id_pedido, id_producto, cantidad) VALUES\n  (1, 1, 2),\n  (1, 2, 5),\n  (2, 3, 1),\n  (3, 2, 10),\n  (3, 7, 3),\n  (4, 5, 1);";
+  var STEPS = [
+    { t: "Preparar el entorno", tag: "Preparación", p: "Activa la verificación de llaves foráneas y limpia cualquier intento anterior. Observa el orden del DROP: primero las tablas del lado N, que dependen de otras, y al final las referenciadas.",
+      sql: "PRAGMA foreign_keys = ON;   -- solo SQLite\n\nDROP TABLE IF EXISTS detalle_pedido;\nDROP TABLE IF EXISTS pedido;\nDROP TABLE IF EXISTS producto;\nDROP TABLE IF EXISTS cliente;\nDROP TABLE IF EXISTS categoria;", ex: "No debe aparecer ningún error. La base queda vacía y lista." },
+    { t: "Crear las cinco tablas", tag: "4.1 · 4.4", p: "Se crean en orden: primero las tablas del lado 1 (categoria, cliente), después las que llevan llave foránea. <code>detalle_pedido</code> es la tabla intermedia de la relación N:M entre pedido y producto.",
+      sql: SQL_CREATE, ex: "En Estructura de la base de datos aparecen 5 tablas: categoria, cliente, producto, pedido y detalle_pedido." },
+    { t: "Modificar una tabla con ALTER", tag: "4.1", p: "El negocio pide guardar el teléfono de los clientes. No hace falta borrar la tabla: se agrega la columna.",
+      sql: "ALTER TABLE cliente\n  ADD COLUMN telefono VARCHAR(15);", ex: "La tabla cliente ahora tiene 4 columnas: id_cliente, nombre, correo y telefono." },
+    { t: "Insertar los datos", tag: "4.2", p: "Se insertan primero las categorías y los clientes (lado 1) y después los productos, pedidos y detalles. Si cambias el orden, las llaves foráneas rechazarán las filas.",
+      sql: SQL_INSERT, ex: "Comprueba con <code>SELECT COUNT(*) FROM producto;</code> → 8. Totales por tabla: categoria 3, cliente 4, producto 8, pedido 4, detalle_pedido 6." },
+    { t: "Actualizar datos con UPDATE", tag: "4.2", p: "Se corrige el precio del cuaderno y se descuentan 2 unidades de su existencia. Fíjate que cada UPDATE lleva WHERE.",
+      sql: "UPDATE producto\nSET precio = 50.00\nWHERE id_producto = 1;\n\nUPDATE producto\nSET existencia = existencia - 2\nWHERE id_producto = 1;\n\nSELECT nombre, precio, existencia\nFROM producto\nWHERE id_producto = 1;", ex: "Una fila: Cuaderno profesional, precio 50, existencia 28." },
+    { t: "Eliminar datos con DELETE", tag: "4.2", p: "Para borrar el pedido 4 primero se borra su detalle (lado N) y luego el pedido. Si lo haces al revés, la llave foránea lo impide.",
+      sql: "DELETE FROM detalle_pedido\nWHERE id_pedido = 4 AND id_producto = 5;\n\nDELETE FROM pedido\nWHERE id_pedido = 4;\n\nSELECT COUNT(*) FROM pedido;", ex: "El conteo de pedido es 3." },
+    { t: "Las restricciones en acción", tag: "4.4", p: "Ejecuta cada sentencia por separado. <strong>Las cuatro deben fallar</strong>: eso demuestra que la base de datos protege sus propias reglas. Anota qué restricción saltó en cada una.",
+      sql: "-- 1) Cliente que no existe (FOREIGN KEY)\nINSERT INTO pedido (id_pedido, fecha, id_cliente)\nVALUES (5, '2026-10-09', 99);\n\n-- 2) Borrar una categoría que tiene productos (FOREIGN KEY)\nDELETE FROM categoria WHERE id_categoria = 1;\n\n-- 3) Precio negativo (CHECK)\nINSERT INTO producto (id_producto, nombre, precio, existencia, id_categoria)\nVALUES (9, 'Regalo', -5, 1, 1);\n\n-- 4) Correo repetido (UNIQUE)\nINSERT INTO cliente (id_cliente, nombre, correo)\nVALUES (5, 'Otra Ana', 'ana@ejemplo.edu.mx');",
+      ex: "Mensajes en SQLite: <code>FOREIGN KEY constraint failed</code> (1 y 2), <code>CHECK constraint failed: precio &gt; 0</code> (3) y <code>UNIQUE constraint failed: cliente.correo</code> (4). Si la 1 o la 2 se ejecutan sin error, revisa que el PRAGMA del paso 1 esté activo." },
+    { t: "Consultas SELECT", tag: "4.3", p: "Ejecuta una a una y compara el número de filas con el comentario. Cambia los valores y observa qué pasa.",
+      sql: "SELECT * FROM producto;                                   -- 8 filas\n\nSELECT nombre, precio FROM producto;                      -- 8 filas, 2 columnas\n\nSELECT nombre, precio\nFROM producto WHERE precio > 100;                         -- 5 filas\n\nSELECT nombre, precio\nFROM producto\nWHERE id_categoria = 1\nORDER BY precio DESC;                                     -- 3 filas\n\nSELECT nombre FROM producto\nWHERE nombre LIKE 'M%';                                   -- 4 filas\n\nSELECT nombre, precio FROM producto\nWHERE precio BETWEEN 100 AND 300\nORDER BY precio;                                          -- 4 filas\n\nSELECT nombre, precio FROM producto\nORDER BY precio DESC\nLIMIT 3;                                                  -- 3 filas\n\nSELECT COUNT(*) FROM producto\nWHERE existencia = 0;                                     -- 1 (Audífonos)",
+      ex: "Los comentarios al final de cada consulta indican las filas esperadas. Si el número no coincide, revisa si ejecutaste los pasos 5 y 6." },
+    { t: "Eliminar una tabla con DROP", tag: "4.1", p: "Crea una tabla de prueba y elimínala. Observa que DROP no pide confirmación.",
+      sql: "CREATE TABLE temporal (id INTEGER PRIMARY KEY);\n\nDROP TABLE temporal;", ex: "La tabla temporal aparece al crearla y desaparece al eliminarla. Las demás tablas siguen intactas." }
+  ];
+  var stepDone = STEPS.map(function () { return false; });
+  function stepsRender(openIdx) {
+    var h = "";
+    STEPS.forEach(function (s, i) {
+      h += '<details class="step' + (stepDone[i] ? " done" : "") + '" data-i="' + i + '"' + (i === openIdx ? " open" : "") + "><summary><span class=\"sn\">" + (i + 1) + '</span><span class="st-t">' + s.t + '</span><span class="st-tag">' + s.tag + '</span></summary><div class="st-body"><p>' + s.p +
+        '</p><div class="codeblock"><span class="cb-tag">SQL · Paso ' + (i + 1) + '</span><button class="cb-copy" type="button">Copiar</button><pre class="sql" data-raw="' + esc(s.sql) + '">' + hl(s.sql) + '</pre></div><div class="expect"><b>Qué debes ver</b>' + s.ex + '</div><label class="done-ck"><input type="checkbox" data-i="' + i + '"' + (stepDone[i] ? " checked" : "") + "> Ya lo ejecuté y obtuve el resultado esperado</label></div></details>";
+    });
+    $("steps").innerHTML = h; stepsProg();
+  }
+  function stepsProg() { var n = stepDone.filter(Boolean).length; $("pr-txt").textContent = n + " de " + STEPS.length + " pasos completados"; $("pr-bar").style.width = (n / STEPS.length * 100) + "%"; }
+  $("steps").addEventListener("change", function (e) {
+    var c = e.target; if (c.type !== "checkbox") return;
+    var i = +c.getAttribute("data-i"); stepDone[i] = c.checked;
+    c.closest(".step").classList.toggle("done", c.checked); stepsProg();
+  });
+  stepsRender(0);
+
+  /* ============================================================
+     LIENZO DEL PROYECTO
+     ============================================================ */
+  var TYPES = ["INTEGER", "VARCHAR(30)", "VARCHAR(60)", "VARCHAR(100)", "TEXT", "DECIMAL(10,2)", "DATE"];
+  var P = { name: "", team: "", ents: [], rels: [] }, uid = 1, view = "er", lastModel = null;
+  function nid() { return uid++; }
+  function slug(s) { s = String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, ""); if (/^[0-9]/.test(s)) s = "x_" + s; return s; }
+  function newEnt(name, attrs) { return { id: nid(), name: name, attrs: attrs }; }
+  function A(n, t, pk, nn, uq) { return { n: n, t: t, pk: !!pk, nn: !!nn, uq: !!uq }; }
+  function exampleProject() {
+    uid = 1;
+    var cat = newEnt("CATEGORIA", [A("id_categoria", "INTEGER", 1), A("nombre", "VARCHAR(30)", 0, 1, 1), A("descripcion", "VARCHAR(100)")]);
+    var cli = newEnt("CLIENTE", [A("id_cliente", "INTEGER", 1), A("nombre", "VARCHAR(60)", 0, 1), A("correo", "VARCHAR(100)", 0, 0, 1)]);
+    var pro = newEnt("PRODUCTO", [A("id_producto", "INTEGER", 1), A("nombre", "VARCHAR(60)", 0, 1), A("precio", "DECIMAL(10,2)", 0, 1), A("existencia", "INTEGER", 0, 1)]);
+    var ped = newEnt("PEDIDO", [A("id_pedido", "INTEGER", 1), A("fecha", "DATE", 0, 1), A("estado", "VARCHAR(30)", 0, 1)]);
+    P = { name: "Ejemplo: Tienda escolar", team: "Equipo de ejemplo", ents: [cat, cli, pro, ped], rels: [
+      { id: nid(), a: cat.id, b: pro.id, ida: "N", vuelta: "1", req: true, jname: "", jattrs: "" },
+      { id: nid(), a: cli.id, b: ped.id, ida: "N", vuelta: "1", req: true, jname: "", jattrs: "" },
+      { id: nid(), a: ped.id, b: pro.id, ida: "N", vuelta: "N", req: true, jname: "detalle_pedido", jattrs: "cantidad:INTEGER" } ] };
+  }
+  function blankProject() {
+    uid = 1; var ents = [1, 2, 3].map(function (n) { return newEnt("ENTIDAD " + n, [A("id", "INTEGER", 1)]); });
+    P = { name: "", team: "", ents: ents, rels: [{ id: nid(), a: ents[0].id, b: ents[1].id, ida: "N", vuelta: "1", req: true, jname: "", jattrs: "" }] };
+  }
+  function entName(id) { for (var i = 0; i < P.ents.length; i++) if (P.ents[i].id === id) return P.ents[i].name || "(sin nombre)"; return "?"; }
+
+  /* ----- Modelo derivado: tablas, llaves foráneas, enlaces ----- */
+  function derive() {
+    var tables = [], byId = {}, byName = {}, dupNames = {}, relInfo = {}, links = [], erLinks = [];
+    P.ents.forEach(function (e) {
+      var nm = slug(e.name); if (!nm) return;
+      if (byName[nm]) { dupNames[nm] = true; return; }
+      var cols = [], seen = {};
+      e.attrs.forEach(function (a) { var cn = slug(a.n); if (!cn || seen[cn]) return; seen[cn] = 1; cols.push({ n: cn, t: a.t, pk: !!a.pk, nn: !!a.nn || !!a.pk, uq: !!a.uq && !a.pk, fk: false }); });
+      var t = { key: "e" + e.id, name: nm, disp: String(e.name).toUpperCase(), cols: cols, fks: [], junction: false };
+      tables.push(t); byId[e.id] = t; byName[nm] = t;
+    });
+    function pkOf(t) { return t.cols.filter(function (c) { return c.pk; }); }
+    function fkName(parent, pc) { return (/^id_/.test(pc.n)) ? pc.n : parent.name + "_" + pc.n; }
+    function addFk(child, parent, asPk, nn, uq) {
+      var names = [], refs = [];
+      pkOf(parent).forEach(function (pc) {
+        var n = fkName(parent, pc), ex = null;
+        child.cols.forEach(function (c) { if (c.n === n) ex = c; });
+        if (ex) { ex.fk = true; if (asPk) { ex.pk = true; ex.nn = true; } }
+        else child.cols.push({ n: n, t: pc.t, pk: !!asPk, nn: !!nn || !!asPk, uq: !!uq, fk: true });
+        names.push(n); refs.push(pc.n);
+      });
+      child.fks.push({ cols: names, table: parent.name, refs: refs });
+    }
+    P.rels.forEach(function (r) {
+      var a = byId[r.a], b = byId[r.b];
+      if (!a || !b || a === b) { relInfo[r.id] = { bad: true, text: "Elige dos entidades distintas y con nombre." }; return; }
+      var endA = r.vuelta, endB = r.ida;
+      erLinks.push({ from: a.key, to: b.key, n1: endA, n2: endB, label: endA + ":" + endB === "N:N" ? "N:M" : endA + ":" + endB });
+      if (!pkOf(a).length || !pkOf(b).length) { relInfo[r.id] = { bad: true, text: "Marca una llave primaria en " + (pkOf(a).length ? b.disp : a.disp) + " para poder relacionar las tablas." }; return; }
+      if (endA === "N" && endB === "N") {
+        var jn = slug(r.jname) || (a.name + "_" + b.name);
+        while (byName[jn]) jn += "_r";
+        var jt = { key: "j" + r.id, name: jn, disp: jn.toUpperCase(), cols: [], fks: [], junction: true };
+        byName[jn] = jt; addFk(jt, a, true, true, false); addFk(jt, b, true, true, false);
+        String(r.jattrs || "").split(",").forEach(function (tok) {
+          var pr = tok.split(":"), cn = slug(pr[0]); if (!cn) return;
+          var ty = (pr[1] || "").trim().toUpperCase(); if (!/^[A-Z]+(\(\d+(,\d+)?\))?$/.test(ty)) ty = "VARCHAR(60)";
+          if (!jt.cols.some(function (c) { return c.n === cn; })) jt.cols.push({ n: cn, t: ty, pk: false, nn: true, uq: false, fk: false });
+        });
+        tables.push(jt);
+        links.push({ from: jt.key, to: a.key, n1: "N", n2: "1" }, { from: jt.key, to: b.key, n1: "N", n2: "1" });
+        relInfo[r.id] = { text: "Relación N:M: se crea la tabla intermedia <b>" + jn + "</b> con dos llaves foráneas (" + jt.fks.map(function (f) { return f.cols.join(", "); }).join(" y ") + ") que forman su llave primaria." };
+      } else {
+        var child, parent, uq = endA === "1" && endB === "1";
+        if (endA === "N" && endB === "1") { child = a; parent = b; } else { child = b; parent = a; }
+        addFk(child, parent, false, r.req !== false, uq);
+        var fcols = child.fks[child.fks.length - 1].cols.join(", ");
+        links.push({ from: child.key, to: parent.key, n1: uq ? "1" : "N", n2: "1" });
+        relInfo[r.id] = { text: "La llave foránea queda en <b>" + child.name + "</b> (columna " + fcols + ") y apunta a <b>" + parent.name + "</b>." + (uq ? " Lleva UNIQUE por ser 1:1." : " Es el lado N de la relación.") };
+      }
+    });
+    return { tables: tables, links: links, erLinks: erLinks, relInfo: relInfo, dup: dupNames, byId: byId };
+  }
+
+  /* ----- Orden de creación y generación del script ----- */
+  function sortTables(tables) {
+    var done = {}, out = [], rest = tables.slice(), guard = 0;
+    while (rest.length && guard++ < 200) {
+      var next = [];
+      rest.forEach(function (t) { var ok = t.fks.every(function (f) { return f.table === t.name || done[f.table]; }); if (ok) { out.push(t); done[t.name] = 1; } else next.push(t); });
+      if (next.length === rest.length) { out = out.concat(next); break; } rest = next;
+    }
+    return out;
+  }
+  function genSql(m, eng, withDrop) {
+    var ts = sortTables(m.tables);
+    if (!ts.length) return "-- Agrega al menos una entidad con nombre para generar el script.";
+    var L = [];
+    L.push("-- Proyecto: " + (P.name || "(sin nombre)"));
+    L.push("-- Equipo: " + (P.team || "(sin capturar)"));
+    L.push("-- Bases de Datos I · Unidad 4 · Generado con el lienzo del proyecto integrador");
+    L.push("");
+    if (eng === "sqlite") { L.push("PRAGMA foreign_keys = ON;"); L.push(""); }
+    if (withDrop) { ts.slice().reverse().forEach(function (t) { L.push("DROP TABLE IF EXISTS " + t.name + ";"); }); L.push(""); }
+    ts.forEach(function (t) {
+      var pks = t.cols.filter(function (c) { return c.pk; }), comp = pks.length > 1, w = 0;
+      t.cols.forEach(function (c) { if (c.n.length > w) w = c.n.length; });
+      var lines = t.cols.map(function (c) {
+        var s = "  " + c.n + new Array(w - c.n.length + 2).join(" ") + c.t;
+        if (c.pk && !comp) s += " PRIMARY KEY"; else if (c.nn) s += " NOT NULL";
+        if (c.uq && !c.pk) s += " UNIQUE";
+        return s;
+      });
+      if (!pks.length) lines.push("  -- ATENCIÓN: esta tabla no tiene llave primaria");
+      var tail = [];
+      if (comp) tail.push("  PRIMARY KEY (" + pks.map(function (c) { return c.n; }).join(", ") + ")");
+      t.fks.forEach(function (f) { tail.push("  FOREIGN KEY (" + f.cols.join(", ") + ") REFERENCES " + f.table + " (" + f.refs.join(", ") + ")"); });
+      var body = lines.filter(function (x) { return x.indexOf("--") < 0; }), note = lines.filter(function (x) { return x.indexOf("--") >= 0; });
+      var all = body.concat(tail);
+      L.push("CREATE TABLE " + t.name + " (");
+      L.push(all.map(function (x, i) { return x + (i < all.length - 1 ? "," : ""); }).join("\n"));
+      note.forEach(function (n) { L.push(n); });
+      L.push(");"); L.push("");
+    });
+    return L.join("\n").replace(/\n+$/, "");
+  }
+
+  /* ----- Diagrama SVG ----- */
+  var SVG_STYLE = ".d-box{fill:#fff;stroke:#490b58;stroke-width:2}.d-head{fill:#490b58}.d-title{font:700 13px Arial,Helvetica,sans-serif;fill:#fff;text-anchor:middle}.d-att{font:11.5px Consolas,Menlo,monospace;fill:#1a1a1a}.d-att.pk{font-weight:700;text-decoration:underline}.d-att.fk{fill:#8A5A00;font-weight:700}.d-tag{font:700 9px Arial,sans-serif;fill:#7a7a7a;text-anchor:end}.d-link{stroke:#B9788F;stroke-width:2.5;fill:none}.d-num circle{fill:#fff;stroke:#490b58;stroke-width:2}.d-num text{font:700 13px Arial,sans-serif;fill:#490b58;text-anchor:middle}.d-lab rect{fill:#fff;stroke:#E3CFD8}.d-lab text{font:700 11px Arial,sans-serif;fill:#6B4600;text-anchor:middle}.d-ttl{font:700 14px Arial,sans-serif;fill:#490b58}";
+  function clipPt(b, tx, ty) {
+    var cx = b.x + b.w / 2, cy = b.y + b.h / 2, dx = tx - cx, dy = ty - cy;
+    var sx = dx === 0 ? Infinity : (b.w / 2) / Math.abs(dx), sy = dy === 0 ? Infinity : (b.h / 2) / Math.abs(dy), s = Math.min(sx, sy);
+    return { x: cx + dx * s, y: cy + dy * s };
+  }
+  function diagram(boxes, links, title) {
+    if (!boxes.length) return null;
+    var W = 232, G = 96, GY = 64, M = 24, T = title ? 30 : 0, cols = Math.min(3, boxes.length <= 4 ? Math.ceil(boxes.length / 2) + (boxes.length === 3 ? 1 : 0) : 3);
+    if (boxes.length <= 2) cols = boxes.length; if (boxes.length === 4) cols = 2;
+    boxes.forEach(function (b) { b.w = W; b.h = 30 + Math.max(1, b.lines.length) * 18 + 12; });
+    var rows = Math.ceil(boxes.length / cols), rowH = [], y = M + T;
+    for (var r = 0; r < rows; r++) { var mh = 0; for (var c = 0; c < cols; c++) { var bb = boxes[r * cols + c]; if (bb && bb.h > mh) mh = bb.h; } rowH.push(mh); }
+    var tot = M * 2 + T; rowH.forEach(function (h) { tot += h + GY; }); tot -= GY;
+    boxes.forEach(function (b, i) { var r2 = Math.floor(i / cols), c2 = i % cols, yy = M + T; for (var k = 0; k < r2; k++) yy += rowH[k] + GY; b.x = M + c2 * (W + G); b.y = yy; });
+    var width = M * 2 + cols * W + (cols - 1) * G, map = {}; boxes.forEach(function (b) { map[b.key] = b; });
+    var s = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + width + " " + tot + '" width="' + width + '" height="' + tot + '" role="img" aria-label="' + esc(title || "Diagrama") + '"><style>' + SVG_STYLE + "</style>";
+    s += '<rect width="100%" height="100%" fill="#FAFAFA"/>';
+    if (title) s += '<text class="d-ttl" x="' + M + '" y="22">' + esc(title) + "</text>";
+    var num = "";
+    links.forEach(function (l) {
+      var a = map[l.from], b = map[l.to]; if (!a || !b) return;
+      var pa = clipPt(a, b.x + b.w / 2, b.y + b.h / 2), pb = clipPt(b, a.x + a.w / 2, a.y + a.h / 2);
+      s += '<line class="d-link" x1="' + pa.x.toFixed(1) + '" y1="' + pa.y.toFixed(1) + '" x2="' + pb.x.toFixed(1) + '" y2="' + pb.y.toFixed(1) + '"/>';
+      var len = Math.hypot(pb.x - pa.x, pb.y - pa.y) || 1, ux = (pb.x - pa.x) / len, uy = (pb.y - pa.y) / len, off = Math.min(20, len / 3);
+      [[pa, l.n1, 1], [pb, l.n2, -1]].forEach(function (p) {
+        num += '<g class="d-num"><circle cx="' + (p[0].x + ux * off * p[2]).toFixed(1) + '" cy="' + (p[0].y + uy * off * p[2]).toFixed(1) + '" r="11"/><text x="' + (p[0].x + ux * off * p[2]).toFixed(1) + '" y="' + (p[0].y + uy * off * p[2] + 4.5).toFixed(1) + '">' + esc(p[1]) + "</text></g>";
+      });
+      if (l.label) { var mx = (pa.x + pb.x) / 2, my = (pa.y + pb.y) / 2; num += '<g class="d-lab"><rect x="' + (mx - 17).toFixed(1) + '" y="' + (my - 9).toFixed(1) + '" width="34" height="18" rx="9"/><text x="' + mx.toFixed(1) + '" y="' + (my + 4).toFixed(1) + '">' + esc(l.label) + "</text></g>"; }
+    });
+    boxes.forEach(function (b) {
+      s += '<rect class="d-box" x="' + b.x + '" y="' + b.y + '" width="' + b.w + '" height="' + b.h + '" rx="6"/><path class="d-head" d="M' + b.x + "," + (b.y + 30) + " v-24 a6,6 0 0 1 6,-6 h" + (b.w - 12) + " a6,6 0 0 1 6,6 v24 z\"/>";
+      s += '<text class="d-title" x="' + (b.x + b.w / 2) + '" y="' + (b.y + 20) + '">' + esc(b.disp) + (b.sub ? "" : "") + "</text>";
+      b.lines.forEach(function (ln, i) {
+        var yy = b.y + 30 + 18 * (i + 1) - 4;
+        s += '<text class="d-att' + (ln.pk ? " pk" : "") + (ln.fk ? " fk" : "") + '" x="' + (b.x + 10) + '" y="' + yy + '">' + esc(ln.text) + "</text>";
+        var tg = (ln.pk && ln.fk) ? "PK, FK" : (ln.pk ? "PK" : (ln.fk ? "FK" : "")); if (tg) s += '<text class="d-tag" x="' + (b.x + b.w - 8) + '" y="' + yy + '">' + tg + "</text>";
+      });
+      if (!b.lines.length) s += '<text class="d-att" x="' + (b.x + 10) + '" y="' + (b.y + 44) + '" fill="#999">(sin atributos)</text>';
+    });
+    return s + num + "</svg>";
+  }
+  function boxFromTable(t, withTypes) { return { key: t.key, disp: t.disp, lines: t.cols.map(function (c) { return { text: c.n + (withTypes ? "  " + c.t : ""), pk: c.pk, fk: c.fk }; }) }; }
+
+  /* ----- Render ----- */
+  function renderEnts() {
+    var h = "";
+    P.ents.forEach(function (e) {
+      h += '<div class="ent" data-e="' + e.id + '"><div class="ent-h"><input type="text" data-f="ename" value="' + esc(e.name) + '" placeholder="Nombre de la entidad" aria-label="Nombre de la entidad"><button class="xbtn" type="button" data-act="delent" title="Eliminar entidad" aria-label="Eliminar entidad">&times;</button></div><div class="ent-b">';
+      h += '<div class="att hd"><span>Atributo</span><span>Tipo</span><span class="ckc">PK</span><span class="ckc">NN</span><span class="ckc">UQ</span><span></span></div>';
+      e.attrs.forEach(function (a, i) {
+        h += '<div class="att" data-a="' + i + '"><input type="text" data-f="an" value="' + esc(a.n) + '" placeholder="nombre_columna" aria-label="Nombre del atributo"><select data-f="at" aria-label="Tipo de dato">' + optHtml(TYPES, a.t) + '</select>' +
+          '<span class="ckc"><input type="checkbox" data-f="pk"' + (a.pk ? " checked" : "") + ' aria-label="Llave primaria"></span><span class="ckc"><input type="checkbox" data-f="nn"' + (a.nn || a.pk ? " checked" : "") + (a.pk ? " disabled" : "") + ' aria-label="No nulo"></span><span class="ckc"><input type="checkbox" data-f="uq"' + (a.uq && !a.pk ? " checked" : "") + (a.pk ? " disabled" : "") + ' aria-label="Único"></span>' +
+          '<button class="xbtn" type="button" data-act="delatt" aria-label="Eliminar atributo">&times;</button></div>';
+      });
+      h += '<button class="btn sm ghost" type="button" data-act="addatt" style="margin-top:.4rem;">+ Atributo</button></div></div>';
+    });
+    if (!P.ents.length) h = '<div class="empty-msg">Aún no hay entidades. Agrega la primera.</div>';
+    $("cv-ents").innerHTML = h;
+  }
+  function renderRels() {
+    var m = lastModel || derive(), h = "";
+    var opts = function (cur) { return P.ents.map(function (e) { return '<option value="' + e.id + '"' + (e.id === cur ? " selected" : "") + ">" + esc(e.name || "(sin nombre)") + "</option>"; }).join(""); };
+    P.rels.forEach(function (r) {
+      var nA = entName(r.a), nB = entName(r.b), nm = r.ida === "N" && r.vuelta === "N", info = m.relInfo[r.id], tipo = (r.vuelta === "N" && r.ida === "N") ? "N:M" : r.vuelta + ":" + r.ida;
+      h += '<div class="rel" data-r="' + r.id + '"><div class="row"><select data-f="a" aria-label="Entidad A">' + opts(r.a) + '</select><span>con</span><select data-f="b" aria-label="Entidad B">' + opts(r.b) + '</select><span class="tipo">' + tipo + '</span><button class="xbtn" type="button" data-act="delrel" aria-label="Eliminar relación">&times;</button></div>';
+      h += '<div class="rd i"><b>IDA</b> Un <strong>' + esc(nA) + '</strong> se relaciona con hasta <select data-f="ida" aria-label="Cuántos de B por cada A"><option value="1"' + (r.ida === "1" ? " selected" : "") + '>1 (uno)</option><option value="N"' + (r.ida === "N" ? " selected" : "") + '>N (varios)</option></select> <strong>' + esc(nB) + '</strong> &rarr; el número va junto a ' + esc(nB) + "</div>";
+      h += '<div class="rd v"><b>VUELTA</b> Un <strong>' + esc(nB) + '</strong> se relaciona con hasta <select data-f="vuelta" aria-label="Cuántos de A por cada B"><option value="1"' + (r.vuelta === "1" ? " selected" : "") + '>1 (uno)</option><option value="N"' + (r.vuelta === "N" ? " selected" : "") + '>N (varios)</option></select> <strong>' + esc(nA) + '</strong> &rarr; el número va junto a ' + esc(nA) + "</div>";
+      if (nm) h += '<div class="row"><label class="fld">Tabla intermedia <input type="text" data-f="jname" value="' + esc(r.jname) + '" placeholder="ej. detalle_pedido" size="16"></label><label class="fld">Atributos de la relación <input type="text" data-f="jattrs" value="' + esc(r.jattrs) + '" placeholder="cantidad:INTEGER, fecha:DATE" size="24"></label></div>';
+      else h += '<div class="row"><label class="ck" style="font-size:.78rem;cursor:pointer;"><input type="checkbox" data-f="req"' + (r.req !== false ? " checked" : "") + '> El lado N siempre debe tener un padre (NOT NULL)</label></div>';
+      if (info) h += '<div class="fkinfo"' + (info.bad ? ' style="background:#FDECEA;color:#8C1D18"' : "") + ">" + info.text + "</div>";
+      h += "</div>";
+    });
+    if (!P.rels.length) h = '<div class="empty-msg">Aún no hay relaciones. Agrega una.</div>';
+    $("cv-rels").innerHTML = h;
+  }
+  function renderOut() {
+    var m = lastModel = derive(), eng = $("cv-eng").value, svg;
+    if (view === "er") {
+      var boxes = P.ents.filter(function (e) { return m.byId[e.id]; }).map(function (e) { var t = m.byId[e.id]; return { key: t.key, disp: t.disp, lines: e.attrs.filter(function (a) { return slug(a.n); }).map(function (a) { return { text: slug(a.n) + "  " + a.t, pk: a.pk, fk: false }; }) }; });
+      svg = diagram(boxes, m.erLinks, "Diagrama conceptual · " + (P.name || "Proyecto integrador"));
+    } else svg = diagram(sortTables(m.tables).map(function (t) { return boxFromTable(t, true); }), m.links, "Esquema relacional · " + (P.name || "Proyecto integrador"));
+    $("cv-diagram").innerHTML = svg || '<div class="empty-msg">Agrega entidades con nombre para ver el diagrama.</div>';
+    setSql($("cv-sql"), genSql(m, eng, $("cv-drop").checked));
+    // lista de verificación
+    var named = P.ents.filter(function (e) { return slug(e.name); }), tabs = m.tables.filter(function (t) { return !t.junction; });
+    var names = P.ents.map(function (e) { return slug(e.name); }), uniqueOk = names.every(Boolean) && Object.keys(m.dup).length === 0;
+    var linked = {}; P.rels.forEach(function (r) { if (m.byId[r.a] && m.byId[r.b] && r.a !== r.b) { linked[r.a] = 1; linked[r.b] = 1; } });
+    var validRels = P.rels.filter(function (r) { return m.byId[r.a] && m.byId[r.b] && r.a !== r.b; }).length;
+    var items = [
+      ["Al menos 3 entidades con nombre", named.length >= 3],
+      ["Cada entidad tiene una llave primaria", tabs.length > 0 && tabs.every(function (t) { return t.cols.some(function (c) { return c.pk; }); })],
+      ["Cada entidad tiene al menos 3 atributos", tabs.length > 0 && tabs.every(function (t) { return t.cols.filter(function (c) { return !c.fk; }).length >= 3; })],
+      ["Al menos 2 relaciones con ambos extremos definidos", validRels >= 2],
+      ["Ninguna entidad queda aislada", named.length > 0 && named.every(function (e) { return linked[e.id]; })],
+      ["Los nombres no están vacíos ni repetidos", P.ents.length > 0 && uniqueOk]
+    ], ok = items.filter(function (x) { return x[1]; }).length, c = "";
+    items.forEach(function (x) { c += '<li class="' + (x[1] ? "ok" : "") + '">' + x[0] + "</li>"; });
+    c += '<li style="border-color:var(--guinda);background:var(--ida-soft);color:var(--guinda-dark);font-weight:700;">' + ok + " de " + items.length + " criterios cumplidos</li>";
+    $("cv-chk").innerHTML = c;
+  }
+  function refreshAll(skipEnts) { if (!skipEnts) renderEnts(); lastModel = derive(); renderRels(); renderOut(); }
+
+  /* ----- Eventos del lienzo ----- */
+  function findEnt(id) { for (var i = 0; i < P.ents.length; i++) if (P.ents[i].id === id) return P.ents[i]; return null; }
+  $("cv-name").addEventListener("input", function (e) { P.name = e.target.value; renderOut(); });
+  $("cv-team").addEventListener("input", function (e) { P.team = e.target.value; renderOut(); });
+  $("cv-ents").addEventListener("input", function (e) {
+    var t = e.target, f = t.getAttribute("data-f"), box = t.closest(".ent"); if (!box) return;
+    var ent = findEnt(+box.getAttribute("data-e")); if (!ent) return;
+    if (f === "ename") { ent.name = t.value; lastModel = derive(); renderRels(); renderOut(); }
+    else if (f === "an") { ent.attrs[+t.closest(".att").getAttribute("data-a")].n = t.value; lastModel = derive(); renderRels(); renderOut(); }
+  });
+  $("cv-ents").addEventListener("change", function (e) {
+    var t = e.target, f = t.getAttribute("data-f"), box = t.closest(".ent"); if (!box || !f) return;
+    var ent = findEnt(+box.getAttribute("data-e")), row = t.closest(".att"); if (!ent || !row) return;
+    var a = ent.attrs[+row.getAttribute("data-a")];
+    if (f === "at") a.t = t.value; else if (f === "pk") { a.pk = t.checked; if (a.pk) { a.nn = true; a.uq = false; } renderEnts(); } else if (f === "nn") a.nn = t.checked; else if (f === "uq") a.uq = t.checked;
+    lastModel = derive(); renderRels(); renderOut();
+  });
+  $("cv-ents").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-act]"); if (!b) return;
+    var box = b.closest(".ent"), ent = box && findEnt(+box.getAttribute("data-e")), act = b.getAttribute("data-act");
+    if (act === "addatt") ent.attrs.push(A("", "VARCHAR(60)"));
+    else if (act === "delatt") { ent.attrs.splice(+b.closest(".att").getAttribute("data-a"), 1); }
+    else if (act === "delent") { P.ents = P.ents.filter(function (x) { return x !== ent; }); P.rels = P.rels.filter(function (r) { return r.a !== ent.id && r.b !== ent.id; }); }
+    refreshAll();
+    if (act === "addatt") { var rows = document.querySelectorAll('.ent[data-e="' + ent.id + '"] .att[data-a]'); var last = rows[rows.length - 1]; if (last) last.querySelector("input").focus(); }
+  });
+  $("cv-addent").addEventListener("click", function () {
+    var n = P.ents.length + 1; P.ents.push(newEnt("ENTIDAD " + n, [A("id", "INTEGER", 1)])); refreshAll();
+    var all = document.querySelectorAll('#cv-ents .ent-h input'); if (all.length) { var l = all[all.length - 1]; l.focus(); l.select(); }
+  });
+  $("cv-addrel").addEventListener("click", function () {
+    if (P.ents.length < 2) { toast("Primero agrega al menos dos entidades"); return; }
+    P.rels.push({ id: nid(), a: P.ents[0].id, b: P.ents[1].id, ida: "N", vuelta: "1", req: true, jname: "", jattrs: "" }); refreshAll(true);
+  });
+  $("cv-rels").addEventListener("change", function (e) {
+    var t = e.target, f = t.getAttribute("data-f"), box = t.closest(".rel"); if (!box || !f) return;
+    var r = P.rels.filter(function (x) { return x.id === +box.getAttribute("data-r"); })[0]; if (!r) return;
+    if (f === "a") r.a = +t.value; else if (f === "b") r.b = +t.value; else if (f === "ida") r.ida = t.value; else if (f === "vuelta") r.vuelta = t.value; else if (f === "req") r.req = t.checked; else return;
+    lastModel = derive(); renderRels(); renderOut();
+  });
+  $("cv-rels").addEventListener("input", function (e) {
+    var t = e.target, f = t.getAttribute("data-f"), box = t.closest(".rel"); if (!box || (f !== "jname" && f !== "jattrs")) return;
+    var r = P.rels.filter(function (x) { return x.id === +box.getAttribute("data-r"); })[0]; if (!r) return;
+    r[f] = t.value; lastModel = derive(); renderOut();
+  });
+  $("cv-rels").addEventListener("click", function (e) {
+    var b = e.target.closest('[data-act="delrel"]'); if (!b) return;
+    var id = +b.closest(".rel").getAttribute("data-r"); P.rels = P.rels.filter(function (r) { return r.id !== id; }); refreshAll(true);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".vt"), function (b) { b.addEventListener("click", function () { view = b.getAttribute("data-v"); Array.prototype.forEach.call(document.querySelectorAll(".vt"), function (x) { x.setAttribute("aria-selected", x === b ? "true" : "false"); }); renderOut(); }); });
+  $("cv-eng").addEventListener("change", renderOut); $("cv-drop").addEventListener("change", renderOut);
+  function syncTop() { $("cv-name").value = P.name; $("cv-team").value = P.team; }
+  $("cv-example").addEventListener("click", function () { exampleProject(); syncTop(); refreshAll(); toast("Ejemplo cargado: Tienda escolar"); });
+  var newArm = null;
+  $("cv-new").addEventListener("click", function () {
+    var b = $("cv-new");
+    if (!newArm) { b.textContent = "¿Seguro? Pulsa otra vez"; newArm = setTimeout(function () { newArm = null; b.textContent = "Nuevo proyecto"; }, 3000); return; }
+    clearTimeout(newArm); newArm = null; b.textContent = "Nuevo proyecto"; blankProject(); syncTop(); refreshAll(); toast("Proyecto nuevo listo para capturar");
+  });
+  $("cv-copy").addEventListener("click", function () { copyText($("cv-sql").dataset.raw); });
+  $("cv-dl").addEventListener("click", function () { download((slug(P.name) || "proyecto_integrador") + ".sql", $("cv-sql").dataset.raw + "\n", "text/plain;charset=utf-8"); });
+  $("cv-svg").addEventListener("click", function () { var s = $("cv-diagram").querySelector("svg"); if (!s) { toast("Aún no hay diagrama"); return; } download((slug(P.name) || "proyecto_integrador") + "_diagrama_" + view + ".svg", '<?xml version="1.0" encoding="UTF-8"?>\n' + s.outerHTML, "image/svg+xml"); });
+  $("cv-save").addEventListener("click", function () { download((slug(P.name) || "proyecto_integrador") + ".json", JSON.stringify(P, null, 2), "application/json"); });
+  $("cv-load").addEventListener("click", function () { $("cv-file").click(); });
+  $("cv-file").addEventListener("change", function (e) {
+    var f = e.target.files[0]; if (!f) return; var rd = new FileReader();
+    rd.onload = function () {
+      try {
+        var d = JSON.parse(rd.result); if (!d || !Array.isArray(d.ents) || !Array.isArray(d.rels)) throw new Error("formato");
+        var mx = 0; d.ents.forEach(function (x) { mx = Math.max(mx, +x.id || 0); x.attrs = Array.isArray(x.attrs) ? x.attrs : []; }); d.rels.forEach(function (x) { mx = Math.max(mx, +x.id || 0); });
+        P = { name: String(d.name || ""), team: String(d.team || ""), ents: d.ents, rels: d.rels }; uid = mx + 1; syncTop(); refreshAll(); toast("Avance cargado");
+      } catch (err) { toast("El archivo no tiene el formato del lienzo"); }
+      $("cv-file").value = "";
+    };
+    rd.readAsText(f);
+  });
+  exampleProject(); syncTop(); refreshAll();
+})();
+</script>
+</body>
+</html>
